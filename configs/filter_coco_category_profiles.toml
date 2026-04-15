@@ -1,0 +1,23 @@
+# Named profiles for filter_coco_category_wrap.py
+# Use:
+#   python3 filter_coco_category_wrap.py --config-name <profile_name>
+# or:
+#   python3 filter_coco_category_wrap.py --config-file /path/to/xxx.toml --config-name <profile_name>
+
+[profiles.demo_by_name]
+category_name = "person"
+json_dir = "/path/to/coco/jsons"
+label_root = "/path/to/labels/yolo/object_model"
+output_root = "/path/to/output"
+merge = "false"
+dry_run = true
+debug = false
+
+[profiles.demo_by_id]
+category_id = 1
+json_file = "/path/to/train.json"
+label_root = "/path/to/labels/yolo/object_model"
+output_root = "/path/to/output"
+merge = "false"
+dry_run = false
+debug = false
