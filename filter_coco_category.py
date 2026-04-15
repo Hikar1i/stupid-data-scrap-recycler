@@ -27,6 +27,17 @@ class JsonStats:
     matched_file_names: int
 
 
+@dataclass
+class CopyRunResult:
+    run_prefix: str
+    source_jsons: List[Path]
+    run_dir: Path
+    images_dir: Path
+    labels_dir: Path
+    total_pairs: int
+    copy_stats: Counter
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
@@ -75,6 +86,15 @@ def parse_args() -> argparse.Namespace:
         "--debug",
         action="store_true",
         help="Print each matched file_name and resolved label absolute path",
+    )
+    parser.add_argument(
+        "--merge",
+        choices=["true", "false"],
+        default="false",
+        help=(
+            "Only for --json-dir. true: merge all JSON copy results into one output directory; "
+            "false: create one output directory per JSON file"
+        ),
     )
 
     return parser.parse_args()
@@ -171,9 +191,14 @@ def build_file_pairs(
     return pairs
 
 
-def make_output_dirs(output_root: Path, category_name: str, create_dirs: bool = True) -> Tuple[Path, Path, Path]:
+def make_output_dirs(
+    output_root: Path,
+    run_prefix: str,
+    category_name: str,
+    create_dirs: bool = True,
+) -> Tuple[Path, Path, Path]:
     timestamp = datetime.now().strftime("%y%m%d_%H%M%S")
-    run_dir = output_root / f"{category_name}_{timestamp}"
+    run_dir = output_root / f"{run_prefix}_{category_name}_{timestamp}"
     images_dir = run_dir / "images"
     labels_dir = run_dir / "labels"
     if create_dirs:
@@ -218,8 +243,9 @@ def copy_pairs(pairs: List[FilePair], images_dir: Path, labels_dir: Path) -> Cou
 def main() -> None:
     args = parse_args()
     json_files = collect_json_files(args.json_file, args.json_dir)
+    merge_enabled = args.merge == "true"
 
-    all_pairs: List[FilePair] = []
+    pairs_by_json: Dict[Path, List[FilePair]] = {}
     json_stats: List[JsonStats] = []
     selected_category_name: Optional[str] = args.category_name
 
@@ -251,7 +277,7 @@ def main() -> None:
             label_root=args.label_root,
             image_root=args.image_root,
         )
-        all_pairs.extend(pairs)
+        pairs_by_json[json_path] = pairs
 
         json_stats.append(
             JsonStats(
@@ -264,35 +290,58 @@ def main() -> None:
             )
         )
 
+    for json_path in json_files:
+        pairs_by_json.setdefault(json_path, [])
+
     if selected_category_name is None:
         selected_category_name = f"category_{args.category_id}"
 
-    run_dir, images_dir, labels_dir = make_output_dirs(
-        args.output_root,
-        selected_category_name,
-        create_dirs=not args.dry_run,
-    )
-
-    if args.dry_run:
-        copy_stats = Counter()
+    run_specs: List[Tuple[str, List[Path], List[FilePair]]] = []
+    if args.json_dir is not None:
+        if merge_enabled:
+            merged_pairs: List[FilePair] = []
+            for json_path in json_files:
+                merged_pairs.extend(pairs_by_json[json_path])
+            run_specs.append(("merge", json_files, merged_pairs))
+        else:
+            for json_path in json_files:
+                run_specs.append((json_path.stem, [json_path], pairs_by_json[json_path]))
     else:
-        copy_stats = copy_pairs(all_pairs, images_dir, labels_dir)
+        json_path = json_files[0]
+        run_specs.append((json_path.stem, [json_path], pairs_by_json[json_path]))
 
-    if args.debug:
-        print("Debug details:")
-        for pair in all_pairs:
-            print(f"  file_name: {pair.image_source}")
-            print(f"  label_path: {pair.label_source}")
-        print("-" * 80)
+    run_results: List[CopyRunResult] = []
+    for run_prefix, source_jsons, run_pairs in run_specs:
+        run_dir, images_dir, labels_dir = make_output_dirs(
+            args.output_root,
+            run_prefix,
+            selected_category_name,
+            create_dirs=not args.dry_run,
+        )
+
+        if args.dry_run:
+            copy_stats = Counter()
+        else:
+            copy_stats = copy_pairs(run_pairs, images_dir, labels_dir)
+
+        run_results.append(
+            CopyRunResult(
+                run_prefix=run_prefix,
+                source_jsons=source_jsons,
+                run_dir=run_dir,
+                images_dir=images_dir,
+                labels_dir=labels_dir,
+                total_pairs=len(run_pairs),
+                copy_stats=copy_stats,
+            )
+        )
 
     print("=" * 80)
     print("COCO category filter summary")
     print("=" * 80)
     print(f"Processed JSON files: {len(json_files)}")
     print(f"Selected category: {selected_category_name}")
-    print(f"Output directory: {run_dir}")
-    print(f"Output images directory: {images_dir}")
-    print(f"Output labels directory: {labels_dir}")
+    print(f"Merge mode: {merge_enabled}")
     print(f"Dry run: {args.dry_run}")
     print("-" * 80)
 
@@ -308,17 +357,33 @@ def main() -> None:
             print(f"  matched_file_names: {item.matched_file_names}")
         print("-" * 80)
 
+    if args.debug:
+        print("Debug details:")
+        for run in run_results:
+            print(f"  run_prefix: {run.run_prefix}")
+            for pair in [p for spec in run_specs if spec[0] == run.run_prefix for p in spec[2]]:
+                print(f"    file_name: {pair.image_source}")
+                print(f"    label_path: {pair.label_source}")
+        print("-" * 80)
+
     if args.dry_run:
         print("Dry-run mode: copy is skipped. The files above would be copied to the output directories shown.")
 
-    print("Copy result:")
-    print(f"  total_pairs: {len(all_pairs)}")
-    print(f"  images_copied: {copy_stats['images_copied']}")
-    print(f"  images_missing: {copy_stats['images_missing']}")
-    print(f"  labels_copied: {copy_stats['labels_copied']}")
-    print(f"  labels_missing: {copy_stats['labels_missing']}")
-    print(f"  image_name_conflicts: {copy_stats['image_name_conflicts']}")
-    print(f"  label_name_conflicts: {copy_stats['label_name_conflicts']}")
+    for run in run_results:
+        print(f"Copy result ({run.run_prefix}):")
+        print(f"  source_jsons: {[str(p) for p in run.source_jsons]}")
+        print(f"  output_directory: {run.run_dir}")
+        print(f"  output_images_directory: {run.images_dir}")
+        print(f"  output_labels_directory: {run.labels_dir}")
+        print(f"  total_pairs: {run.total_pairs}")
+        print(f"  images_copied: {run.copy_stats['images_copied']}")
+        print(f"  images_missing: {run.copy_stats['images_missing']}")
+        print(f"  labels_copied: {run.copy_stats['labels_copied']}")
+        print(f"  labels_missing: {run.copy_stats['labels_missing']}")
+        print(f"  image_name_conflicts: {run.copy_stats['image_name_conflicts']}")
+        print(f"  label_name_conflicts: {run.copy_stats['label_name_conflicts']}")
+        print("-" * 80)
+
     print("=" * 80)
 
 
