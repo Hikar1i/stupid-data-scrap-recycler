@@ -10,8 +10,8 @@ DEFAULT_CONFIG_RELATIVE_PATH = Path("configs/filter_coco_category_profiles.toml"
 FILTER_SCRIPT_NAME = "filter_coco_category.py"
 
 ALLOWED_CONFIG_KEYS = {
-    "category_id",
-    "category_name",
+    "category_ids",
+    "category_names",
     "json_file",
     "json_dir",
     "label_root",
@@ -114,6 +114,18 @@ def _to_merge_string(value: Any) -> Optional[str]:
     return None
 
 
+def _normalize_multi_value(value: Any) -> Optional[str]:
+    if value is None:
+        return None
+    if isinstance(value, str):
+        items = [x.strip() for x in value.split(",") if x.strip()]
+        return ",".join(items) if items else None
+    if isinstance(value, list):
+        items = [str(x).strip() for x in value if str(x).strip()]
+        return ",".join(items) if items else None
+    return None
+
+
 def validate_profile(profile: Dict[str, Any], profile_name: str) -> Tuple[Dict[str, Any], List[str]]:
     errors: List[str] = []
 
@@ -123,17 +135,17 @@ def validate_profile(profile: Dict[str, Any], profile_name: str) -> Tuple[Dict[s
             f"[{profile_name}] unknown keys: {unknown_keys}. Allowed keys: {sorted(ALLOWED_CONFIG_KEYS)}"
         )
 
-    category_id = profile.get("category_id")
-    category_name = profile.get("category_name")
-    has_category_id = category_id is not None
-    has_category_name = bool(category_name)
-    if has_category_id == has_category_name:
-        errors.append("Exactly one of category_id or category_name is required")
+    category_ids = _normalize_multi_value(profile.get("category_ids"))
+    category_names = _normalize_multi_value(profile.get("category_names"))
+    has_category_ids = bool(category_ids)
+    has_category_names = bool(category_names)
+    if has_category_ids == has_category_names:
+        errors.append("Exactly one of category_ids or category_names is required")
 
-    if has_category_id and not isinstance(category_id, int):
-        errors.append("category_id must be int")
-    if has_category_name and not isinstance(category_name, str):
-        errors.append("category_name must be string")
+    if has_category_ids:
+        for item in category_ids.split(","):
+            if not item.isdigit():
+                errors.append(f"category_ids contains non-integer value: {item}")
 
     json_file = profile.get("json_file")
     json_dir = profile.get("json_dir")
@@ -193,13 +205,10 @@ def validate_profile(profile: Dict[str, Any], profile_name: str) -> Tuple[Dict[s
         else:
             errors.append(f"{key} must be boolean")
 
-    if has_category_id and isinstance(category_id, int):
-        normalized["category_id"] = category_id
-    if has_category_name and isinstance(category_name, str):
-        normalized["category_name"] = category_name
-
-    if has_json_file and normalized.get("merge") == "true":
-        errors.append("merge=true is only meaningful when using json_dir")
+    if category_ids:
+        normalized["category_ids"] = category_ids
+    if category_names:
+        normalized["category_names"] = category_names
 
     return normalized, errors
 
@@ -207,10 +216,10 @@ def validate_profile(profile: Dict[str, Any], profile_name: str) -> Tuple[Dict[s
 def build_command(validated: Dict[str, Any]) -> List[str]:
     cmd: List[str] = [sys.executable, str((script_root() / FILTER_SCRIPT_NAME).resolve())]
 
-    if "category_id" in validated:
-        cmd.extend(["--category-id", str(validated["category_id"])])
-    if "category_name" in validated:
-        cmd.extend(["--category-name", validated["category_name"]])
+    if "category_ids" in validated:
+        cmd.extend(["--category-ids", validated["category_ids"]])
+    if "category_names" in validated:
+        cmd.extend(["--category-names", validated["category_names"]])
 
     if "json_file" in validated:
         cmd.extend(["--json-file", validated["json_file"]])

@@ -4,15 +4,17 @@
 
 ## 功能用途
 
-- 支持按 `category_id` 或 `category_name` 筛选目标类别（两者二选一）。
+- 支持按 `category_ids` 或 `category_names` 输入目标类别（两者二选一，支持逗号分隔多类别）。
 - 支持处理单个 JSON（`--json-file`）或目录下多个 JSON（`--json-dir`，会读取该目录下所有 `*.json`）。
 - 从 COCO 的 `annotations` 中筛选匹配类别的 `image_id`，去重后在 `images` 中提取 `file_name`。
 - 根据 `file_name` 生成标签文件路径：
   - 规则：`<label_root>/<file_name父目录名>/<file_name去后缀>.txt`
-- 拷贝结果输出到 `output_root` 下新建目录，并自动创建 `images/` 与 `labels/` 子目录。
+- 拷贝时会过滤标签行，输出标签文件仅保留目标类别 id 的行（不修改原始标签文件）。
+- **COCO→YOLO ID 映射**：COCO 的 `category_id` 从 1 开始，YOLO 标签首列 id 从 0 开始，脚本自动按 `yolo_label_id = coco_category_id - 1` 映射后再过滤标签行，并在输出中打印映射提示和两套 id 对照。
+- 拷贝结果输出到 `output_root` 下新建目录，并自动创建 `<json前缀>/images` 与 `<json前缀>/labels` 子目录。
 - 支持 `--dry-run` 预览（不创建目录、不拷贝）。
 - 支持 `--debug` 打印每个匹配图像路径及其标签路径。
-- 支持 `--merge` 控制 `json-dir` 场景下多 JSON 合并或分开输出。
+- 支持 `--merge` 控制“多类别”输出：合并到一个目录或每个类别单独目录。
 
 ## 运行环境
 
@@ -25,8 +27,8 @@
 
 ### 必选参数
 
-- `--category-id <int>` / `--category-name <str>`
-  - 二选一，指定目标类别。
+- `--category-ids <id1,id2,...>` / `--category-names <name1,name2,...>`
+  - 二选一，支持多类别（逗号分隔）。
 - `--json-file <path>` / `--json-dir <path>`
   - 二选一，指定单个 COCO JSON 或 JSON 目录。
 - `--label-root <path>`
@@ -46,29 +48,31 @@
 - `--debug`
   - 调试模式：输出每个匹配项的 `file_name`（解析后的图像路径）和对应标签绝对路径。
 - `--merge true|false`（默认 `false`）
-  - 仅在 `--json-dir` 模式有意义：
-    - `true`：多个 JSON 的结果合并到一个目录；
-    - `false`：每个 JSON 单独输出到各自目录。
+  - 多类别输出模式：
+    - `true`：多个类别结果合并到一个目录；
+    - `false`：每个类别单独目录。
 
 ## 输出目录命名规则
 
 时间戳格式：`%y%m%d_%H%M%S`，如 `260413_183601`。
 
-- `--json-file`：
-  - 目录名：`[json文件前缀]_[category_name]_[时间戳]`
-  - 示例：`train_person_260413_183601`
-- `--json-dir --merge false`：
-  - 每个 JSON 各自生成目录：
-  - 例如 `train_person_...`、`val_person_...`
-- `--json-dir --merge true`：
-  - 合并为一个目录：`merge_[category_name]_[时间戳]`
+- 多类别且 `--merge false`：
+  - 每个类别目录：`[category_name]_[时间戳]`
+- 多类别且 `--merge true`：
+  - 合并目录：`merge_[时间戳]`
+
+无论 `--json-file` 还是 `--json-dir`，都在 run 目录下按每个 JSON 的前缀继续分层：
+
+- `<run_dir>/<json_prefix>/images`
+- `<run_dir>/<json_prefix>/labels`
 
 每个输出目录结构如下：
 
 ```text
 <run_dir>/
-  images/
-  labels/
+  <json_prefix>/
+    images/
+    labels/
 ```
 
 ## 使用示例
@@ -77,7 +81,7 @@
 
 ```bash
 python3 filter_coco_category.py \
-  --category-name person \
+  --category-names person \
   --json-file /path/to/train.json \
   --label-root /path/to/labels/yolo/object_model \
   --output-root /path/to/output
@@ -87,28 +91,28 @@ python3 filter_coco_category.py \
 
 ```bash
 python3 filter_coco_category.py \
-  --category-id 1 \
+  --category-ids 1 \
   --json-file /path/to/val.json \
   --label-root /path/to/labels/yolo/object_model \
   --output-root /path/to/output
 ```
 
-### 3) 目录模式 + 不合并（每个 JSON 单独目录）
+### 3) 多类别 + 不合并（每个类别单独目录）
 
 ```bash
 python3 filter_coco_category.py \
-  --category-name person \
+  --category-names boom,fence \
   --json-dir /path/to/coco/jsons \
   --label-root /path/to/labels/yolo/object_model \
   --output-root /path/to/output \
   --merge false
 ```
 
-### 4) 目录模式 + 合并输出
+### 4) 多类别 + 合并输出
 
 ```bash
 python3 filter_coco_category.py \
-  --category-name person \
+  --category-names boom,fence \
   --json-dir /path/to/coco/jsons \
   --label-root /path/to/labels/yolo/object_model \
   --output-root /path/to/output \
@@ -119,7 +123,7 @@ python3 filter_coco_category.py \
 
 ```bash
 python3 filter_coco_category.py \
-  --category-name person \
+  --category-names person \
   --json-dir /path/to/coco/jsons \
   --label-root /path/to/labels/yolo/object_model \
   --output-root /path/to/output \
@@ -131,7 +135,7 @@ python3 filter_coco_category.py \
 
 ```bash
 python3 filter_coco_category.py \
-  --category-name person \
+  --category-names person \
   --json-file /path/to/train.json \
   --label-root /path/to/labels/yolo/object_model \
   --output-root /path/to/output \
@@ -166,7 +170,7 @@ python3 filter_coco_category.py \
 
 wrapper 会先校验配置，校验不通过则**不会调用** `filter_coco_category.py`：
 
-- `category_id` / `category_name` 必须二选一
+- `category_ids` / `category_names` 必须二选一（支持逗号分隔多值）
 - `json_file` / `json_dir` 必须二选一
 - `label_root`、`output_root` 必填
 - `merge` 必须是 `true/false`（布尔或字符串均可）
@@ -185,7 +189,7 @@ wrapper 会先校验配置，校验不通过则**不会调用** `filter_coco_cat
 
 ```toml
 [profiles.demo_by_name]
-category_name = "person"
+category_names = "person"
 json_dir = "/path/to/coco/jsons"
 label_root = "/path/to/labels/yolo/object_model"
 output_root = "/path/to/output"
@@ -194,7 +198,7 @@ dry_run = true
 debug = false
 
 [profiles.demo_by_id]
-category_id = 1
+category_ids = "1"
 json_file = "/path/to/train.json"
 label_root = "/path/to/labels/yolo/object_model"
 output_root = "/path/to/output"
