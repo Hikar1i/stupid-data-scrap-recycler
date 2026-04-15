@@ -1,2 +1,16 @@
 _dev/prompt.txt
 **/__pycache__/
+_dev/**/*
+requirements.txt
+.idea/**/*
+_bak/**/*
+_tmp/**/*
+**/*.pyc
+.*ignore*
+!.gitignore
+images/*
+_test/**/*
+models/*
+.env
+*-testset/**/*
+results/**/*
