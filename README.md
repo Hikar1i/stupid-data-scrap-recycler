@@ -228,6 +228,125 @@ python3 filter_coco_category_wrap.py \
   --print-command
 ```
 
+## Roboflow YOLO 过滤脚本
+
+新增脚本：`filter_yolo_roboflow.py`
+
+用途：过滤 Roboflow 下载的 YOLO 数据集（`data.yaml`），按指定类别提取图像和标签，并输出为新的 YOLO 目录结构。
+
+### 输入参数
+
+- `--data-yaml <path>`（必填）
+  - Roboflow 的 `data.yaml` 路径。
+- `--target-names <n1,n2,...>` / `--target-ids <i1,i2,...>`（二选一，必填）
+  - 支持多个类别，逗号分隔。
+- `--output-root <path>`（必填）
+  - 输出根目录。
+- `--merge true|false`（可选，默认 `false`）
+  - 多类别时是否合并输出。
+- 可选覆盖路径：
+  - `--train-images` `--val-images` `--test-images`
+  - `--train-labels` `--val-labels` `--test-labels`
+- `--dry-run`
+  - 仅预览，不创建目录、不拷贝、不写标签。
+- `--debug`
+  - 输出详细路径与逐文件处理信息。
+
+### 路径解析规则
+
+- 若未指定 `--train/val/test-images`，默认按 `data.yaml` 中 `train/val/test` 解析。
+- Roboflow 常见相对路径（如 `../train/images`）会优先尝试解析为与 `data.yaml` 同级的 `train/images`。
+- 若未指定 `--*-labels`，默认从对应图片目录将 `images` 替换为 `labels` 推导。
+- 任何关键路径无效会输出醒目告警，并跳过该数据集处理。
+
+### 输出目录命名
+
+- 数据集前缀：`[数据集目录名前10字符].[后10字符]`（长度不超过 20 时直接使用全名）
+- 单标签 / 多标签非合并：
+  - `[dataset_short]_[label_name]_[timestamp]`
+- 多标签且 `--merge true`：
+  - `[dataset_short]_merge_[timestamp]`
+
+### 输出结构
+
+每个输出目录下会按 split 生成：
+
+```text
+<run_dir>/
+  train/
+    images/
+    labels/
+  valid/
+    images/
+    labels/
+  test/
+    images/
+    labels/
+```
+
+### 标签过滤行为
+
+- 读取每个 `*.txt` 标签文件，仅保留首列类别 id 属于目标类别的行。
+- 原始标签文件不会被修改。
+- 非合并模式下，每个输出目录只包含该类别行。
+- 合并模式下，一个标签文件可包含多个目标类别行。
+
+### 使用示例
+
+按类别名，多类别分别输出：
+
+```bash
+python3 filter_yolo_roboflow.py \
+  --data-yaml /home/ieds/datasets/helmet-det/A-ConstructionSiteSafety.v30-raw-images_latestversion.yolo26/ORIGIN/data.yaml \
+  --target-names Excavator,Gloves \
+  --output-root /home/ieds/Pictures/test123 \
+  --merge false
+```
+
+按类别名，多类别合并输出（推荐先 dry-run）：
+
+```bash
+python3 filter_yolo_roboflow.py \
+  --data-yaml /home/ieds/datasets/helmet-det/A-ConstructionSiteSafety.v30-raw-images_latestversion.yolo26/ORIGIN/data.yaml \
+  --target-names Excavator,Gloves \
+  --output-root /home/ieds/Pictures/test123 \
+  --merge true \
+  --dry-run \
+  --debug
+```
+
+## Roboflow Wrapper（配置驱动）
+
+新增包装脚本：`filter_yolo_roboflow_wrap.py`
+
+- 默认配置文件：`configs/filter_yolo_roboflow_profiles.toml`
+- 调用方式：`配置文件 + 配置名`
+- 校验失败时不会调用 `filter_yolo_roboflow.py`
+
+### Wrapper 参数
+
+- `--config-name <name>`（必填）
+- `--config-file <path>`（可选，相对/绝对路径均支持）
+- `--print-command`（可选，打印最终调用命令）
+
+### 配置示例
+
+```toml
+[profiles.demo_by_names_split]
+data_yaml = "/home/ieds/datasets/helmet-det/A-ConstructionSiteSafety.v30-raw-images_latestversion.yolo26/ORIGIN/data.yaml"
+target_names = "Excavator,Gloves"
+output_root = "/home/ieds/Pictures/test123"
+merge = "false"
+dry_run = true
+debug = true
+```
+
+### Wrapper 使用示例
+
+```bash
+python3 filter_yolo_roboflow_wrap.py --config-name demo_by_names_split
+```
+
 ## 关键逻辑说明
 
 1. 在 `categories` 中找到目标类别（按 `id` 或 `name`）。

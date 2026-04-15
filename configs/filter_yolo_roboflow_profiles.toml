@@ -1,0 +1,29 @@
+# Named profiles for filter_yolo_roboflow_wrap.py
+# Use:
+#   python3 filter_yolo_roboflow_wrap.py --config-name <profile_name>
+# or:
+#   python3 filter_yolo_roboflow_wrap.py --config-file /path/to/xxx.toml --config-name <profile_name>
+
+[profiles.demo_by_names_split]
+data_yaml = "/home/ieds/datasets/helmet-det/A-PersonalProtectiveEquipment-CombinedModel.v1i.yolo26/ORIGIN/data.yaml"
+target_names = "Gloves,NO-Gloves"
+output_root = "/home/ieds/Pictures/test123"
+merge = "false"
+dry_run = false
+debug = false
+
+[profiles.demo_by_names_merge]
+data_yaml = "/home/ieds/datasets/helmet-det/A-PersonalProtectiveEquipment-CombinedModel.v1i.yolo26/ORIGIN/data.yaml"
+target_names = "Fall-Detected,NO-Hardhat,Safety Vest"
+output_root = "/home/ieds/Pictures/test123"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.demo_by_ids]
+data_yaml = "/path/to/data.yaml"
+target_ids = "0,1"
+output_root = "/path/to/output"
+merge = "false"
+dry_run = true
+debug = false
