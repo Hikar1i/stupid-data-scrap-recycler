@@ -10,6 +10,7 @@
 | `yolo_to_labelme.py` | YOLO 标签转 labelme JSON 格式 |
 | `filter_coco_category_wrap.py` | COCO filter wrapper，支持 pipeline |
 | `filter_yolo_roboflow_wrap.py` | Roboflow filter wrapper，支持 pipeline |
+| `gen_roboflow_filter_config.py` | 批量扫描 Roboflow 数据集目录，按关键词自动生成过滤配置文件 |
 | `batch_run_profiles.py` | 批量执行 wrapper 的所有配置段 |
 
 ---
@@ -543,6 +544,150 @@ python3 filter_yolo_roboflow_wrap.py --config-name my_pipeline --print-command
 ```
 
 旧格式（仅含 filter 参数的扁平 profile）不受影响，向后兼容。
+
+---
+
+# gen_roboflow_filter_config.py — 批量生成过滤配置文件
+
+扫描指定目录下所有 Roboflow 数据集子目录，读取每个数据集的 `data.yaml`，按关键词匹配类别后，自动生成可供 `filter_yolo_roboflow_wrap.py` 执行的 TOML 配置文件。
+
+## 功能用途
+
+- 自动扫描目录下一层含 `data.yaml` 的子目录（Roboflow 标准结构）。
+- 以 `*关键词*`（子串）方式匹配 `data.yaml` 中 `names` 数组的类别名，支持多关键词（逗号分隔，OR 逻辑）。
+- 为每个命中的数据集生成一段完整 pipeline profile（filter → reindex → cvtlabelme）。
+- 通过配置模板（`configs/_template/`）控制非动态字段的默认值及启用哪些流水线阶段。
+- 动态字段由脚本自动填充，无需手动配置：
+  - `filter.data_yaml`：扫描到的数据集路径
+  - `filter.target_names`：匹配到的类别名列表
+  - `reindex.mapping`：`原始序号:新序号,...`（如 `3:0,6:1`）
+  - `cvtlabelme.mapping`：`新序号:类别名,...`（如 `0:crane,1:tower crane`）
+
+## 参数说明
+
+### 必选参数
+
+- `--scan-dir <DIR>`：扫描目录，该目录下一层子目录中有 `data.yaml` 的均视为 Roboflow 数据集。
+- `--output-config <FILE>`：输出配置文件路径。仅文件名（不含路径分隔符）时自动放入 `configs/` 目录；含路径分隔符时按绝对/相对路径处理。
+- `--keywords <KW[,KW2,...]>`：类别名匹配关键词，多个关键词用英文逗号分隔（任一命中即算匹配）。
+
+### 可选参数
+
+- `--overwrite`：若目标配置文件已存在则覆盖，默认不覆盖。
+- `--case-sensitive`：匹配时区分大小写，默认不区分。
+- `--output-root <DIR>`：过滤结果输出目录。与模板中 `[filter].output_root` 必须存在其一，CLI 参数优先。
+- `--template <FILE>`：配置模板文件名（自动在 `configs/_template/` 下查找）或绝对/相对路径。未指定时使用内置默认值并生成完整三阶段配置。
+
+## 配置模板
+
+模板文件存放于 `configs/_template/` 目录，TOML 格式。动态字段无需在模板中配置，脚本自动生成。
+
+**模板控制哪些流水线阶段被生成**：
+- 模板中存在 `[reindex]` 节 → 生成的配置包含 reindex 阶段
+- 模板中存在 `[cvtlabelme]` 节 → 生成的配置包含 cvtlabelme 阶段
+- 未指定模板时，默认生成全三阶段配置
+
+内置示例模板：`configs/_template/default_pipeline.toml`
+
+```toml
+[filter]
+output_root = ""    # 也可通过 --output-root 指定，命令行优先
+merge = true
+dry_run = false
+debug = false
+
+[reindex]
+inplace = true
+
+[cvtlabelme]
+overwrite = false
+```
+
+## 使用示例
+
+### 1) 基础用法（使用内置默认值，生成完整三阶段配置）
+
+```bash
+python3 gen_roboflow_filter_config.py \
+  --scan-dir /path/to/roboflow_datasets \
+  --output-config crane_filter.toml \
+  --keywords "crane" \
+  --output-root /path/to/output
+```
+
+### 2) 多关键词匹配（OR 逻辑）
+
+```bash
+python3 gen_roboflow_filter_config.py \
+  --scan-dir /path/to/roboflow_datasets \
+  --output-config crane_filter.toml \
+  --keywords "crane,tower crane,boom" \
+  --output-root /path/to/output
+```
+
+### 3) 使用模板文件（output_root 在模板中配置）
+
+```bash
+python3 gen_roboflow_filter_config.py \
+  --scan-dir /path/to/roboflow_datasets \
+  --output-config crane_filter.toml \
+  --keywords "crane" \
+  --template default_pipeline.toml
+```
+
+### 4) 覆盖已有配置文件，区分大小写匹配
+
+```bash
+python3 gen_roboflow_filter_config.py \
+  --scan-dir /path/to/roboflow_datasets \
+  --output-config /abs/path/to/output.toml \
+  --keywords "Crane,Tower Crane" \
+  --output-root /path/to/output \
+  --case-sensitive \
+  --overwrite
+```
+
+## 生成的配置文件结构示例
+
+```toml
+# 自动生成配置文件
+# 生成时间：2025-04-17 14:00:00
+# 扫描目录：/path/to/roboflow_datasets
+# 匹配关键词：crane
+
+[meta]
+wrapper_type = "yolo_roboflow"
+
+[profiles.20250217_v2i_yolov11.filter]
+data_yaml = "/path/to/roboflow_datasets/-----20250217.v2i.yolov11/data.yaml"
+target_names = "crane,tower crane"
+output_root = "/path/to/output"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.20250217_v2i_yolov11.reindex]
+mapping = "3:0,6:1"
+inplace = true
+
+[profiles.20250217_v2i_yolov11.cvtlabelme]
+mapping = "0:crane,1:tower crane"
+overwrite = false
+```
+
+生成后可直接通过 `filter_yolo_roboflow_wrap.py` 或 `batch_run_profiles.py` 执行：
+
+```bash
+# 单个 profile 执行
+python3 filter_yolo_roboflow_wrap.py \
+  --config-file configs/crane_filter.toml \
+  --config-name 20250217_v2i_yolov11
+
+# 批量执行所有 profile
+python3 batch_run_profiles.py \
+  --wrapper filter_yolo_roboflow_wrap.py \
+  --config-file configs/crane_filter.toml
+```
 
 ---
 

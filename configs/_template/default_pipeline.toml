@@ -1,0 +1,27 @@
+# filter_yolo_roboflow_wrap.py 配置生成模板
+# 由 gen_roboflow_filter_config.py 通过 --template 参数加载使用
+#
+# ── 动态字段（由脚本自动生成，此处无需配置） ──────────────────────────────────────────
+#   [filter]     : data_yaml, target_names
+#   [reindex]    : mapping
+#   [cvtlabelme] : mapping
+#
+# ── 阶段控制 ────────────────────────────────────────────────────────────────────────
+#   是否在生成配置中包含 [reindex] / [cvtlabelme] 阶段，
+#   由模板中是否存在对应节决定：节存在则生成，节缺失则跳过该阶段。
+#   删除下方 [reindex] 或 [cvtlabelme] 节可生成仅含 filter 的单阶段配置。
+
+[filter]
+# 过滤结果输出根目录
+# 也可通过命令行 --output-root 参数指定，命令行参数优先级更高
+# 两者必须存在其一，否则脚本报错退出
+output_root = ""
+merge = true
+dry_run = false
+debug = false
+
+[reindex]
+inplace = true
+
+[cvtlabelme]
+overwrite = false
