@@ -1,0 +1,12 @@
+[project]
+name = "data-scrap-recycler"
+version = "0.1.0"
+requires-python = ">=3.10"
+dependencies = [
+    # 解析 Roboflow data.yaml 及 COCO 数据集相关 YAML 文件
+    "PyYAML>=6.0",
+    # 读取图像宽高（yolo_to_labelme.py 转换 labelme JSON 时使用）
+    "Pillow>=9.0",
+    # TOML 配置文件解析器（Python 3.11+ 已内置 tomllib，仅 3.10 需要此包）
+    "tomli>=2.0; python_version < '3.11'",
+]

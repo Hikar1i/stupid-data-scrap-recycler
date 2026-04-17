@@ -14,3 +14,4 @@ models/*
 .env
 *-testset/**/*
 results/**/*
+**/*venv*/
