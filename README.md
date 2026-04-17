@@ -254,7 +254,7 @@ python3 filter_coco_category_wrap.py \
   --print-command
 ```
 
-## Roboflow YOLO 过滤脚本
+# filter_yolo_roboflow.py — Roboflow YOLO 过滤脚本
 
 新增脚本：`filter_yolo_roboflow.py`
 

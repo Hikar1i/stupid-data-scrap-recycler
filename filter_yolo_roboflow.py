@@ -92,10 +92,7 @@ def _sanitize_name(name: str) -> str:
 
 
 def _short_dataset_name(data_yaml: Path) -> str:
-    if data_yaml.parent.parent.exists():
-        base = data_yaml.parent.parent.name
-    else:
-        base = data_yaml.parent.name
+    base = data_yaml.parent.name
     if len(base) <= 20:
         return base
     return f"{base[:10]}.{base[-10:]}"
