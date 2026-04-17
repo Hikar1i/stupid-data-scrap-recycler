@@ -1,0 +1,49 @@
+[meta]
+wrapper_type = "yolo_roboflow"
+
+# filter_yolo_roboflow_wrap.py 的命名配置文件
+# 使用方式：
+#   python3 filter_yolo_roboflow_wrap.py --config-name <profile名称>
+# 或指定配置文件：
+#   python3 filter_yolo_roboflow_wrap.py --config-file /path/to/xxx.toml --config-name <profile名称>
+
+[profiles.demo_by_names_split]
+data_yaml = "/path/to/data.yaml"
+target_names = "Gloves,NO-Gloves"
+output_root = "/path/to/output"
+merge = "false"
+dry_run = false
+debug = false
+
+[profiles.demo_by_names_merge]
+data_yaml = "/path/to/data.yaml"
+target_names = "Fall-Detected,NO-Hardhat,Safety Vest"
+output_root = "/path/to/output"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.demo_by_ids]
+data_yaml = "/path/to/data.yaml"
+target_ids = "0,1"
+output_root = "/path/to/output"
+merge = "false"
+dry_run = true
+debug = false
+
+# ── Pipeline profile 示例（filter → reindex → cvtlabelme） ─────────────
+[profiles.demo_pipeline.filter]
+data_yaml = "/path/to/data.yaml"
+target_names = "Excavator,Gloves"
+output_root = "/path/to/output"
+merge = "true"
+dry_run = false
+debug = false
+
+[profiles.demo_pipeline.reindex]
+mapping = "0:0,2:1"
+inplace = false
+
+[profiles.demo_pipeline.cvtlabelme]
+mapping = "0:Excavator,1:Gloves"
+overwrite = false
