@@ -1,0 +1,520 @@
+# 自动生成配置文件
+# 生成时间：2026-04-17 15:27:11
+# 扫描目录：/home/ieds/Downloads/craneboom_det_datasets
+# 匹配关键词：crane
+# 配置模板：（内置默认值）
+
+[meta]
+wrapper_type = "yolo_roboflow"
+
+[profiles.v16i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/-----------.v16i.yolov11/data.yaml"
+target_names = "crane,tower crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.v16i_yolov11.reindex]
+mapping = "3:0,6:1"
+inplace = true
+
+[profiles.v16i_yolov11.cvtlabelme]
+mapping = "0:crane,1:tower crane"
+overwrite = false
+
+[profiles.v11i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/---------.v11i.yolov11/data.yaml"
+target_names = "crane,tower-crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.v11i_yolov11.reindex]
+mapping = "3:0,6:1"
+inplace = true
+
+[profiles.v11i_yolov11.cvtlabelme]
+mapping = "0:crane,1:tower-crane"
+overwrite = false
+
+[profiles.20250217_v2i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/-----20250217.v2i.yolov11/data.yaml"
+target_names = "crane,tower crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.20250217_v2i_yolov11.reindex]
+mapping = "3:0,6:1"
+inplace = true
+
+[profiles.20250217_v2i_yolov11.cvtlabelme]
+mapping = "0:crane,1:tower crane"
+overwrite = false
+
+[profiles.230620_HeavyEquipment_v1i_yolov12.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/230620_HeavyEquipment.v1i.yolov12/data.yaml"
+target_names = "Crane,StaticCrane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.230620_HeavyEquipment_v1i_yolov12.reindex]
+mapping = "2:0,8:1"
+inplace = true
+
+[profiles.230620_HeavyEquipment_v1i_yolov12.cvtlabelme]
+mapping = "0:Crane,1:StaticCrane"
+overwrite = false
+
+[profiles.230620_HeavyEquipments_v1i_yolov12.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/230620_HeavyEquipments.v1i.yolov12/data.yaml"
+target_names = "Crane,StaticCrane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.230620_HeavyEquipments_v1i_yolov12.reindex]
+mapping = "2:0,8:1"
+inplace = true
+
+[profiles.230620_HeavyEquipments_v1i_yolov12.cvtlabelme]
+mapping = "0:Crane,1:StaticCrane"
+overwrite = false
+
+[profiles.24-_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/24-.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.24-_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.24-_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.Alpha-Crane-Omega_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Alpha-Crane-Omega.v1i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Alpha-Crane-Omega_v1i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.Alpha-Crane-Omega_v1i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.BAP_v4i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/BAP.v4i.yolov11/data.yaml"
+target_names = "Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.BAP_v4i_yolov11.reindex]
+mapping = "9:0"
+inplace = true
+
+[profiles.BAP_v4i_yolov11.cvtlabelme]
+mapping = "0:Crane"
+overwrite = false
+
+[profiles.Construction_Dataset_v3i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Construction Dataset.v3i.yolov11/data.yaml"
+target_names = "crane,load carrying crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Construction_Dataset_v3i_yolov11.reindex]
+mapping = "10:0,18:1"
+inplace = true
+
+[profiles.Construction_Dataset_v3i_yolov11.cvtlabelme]
+mapping = "0:crane,1:load carrying crane"
+overwrite = false
+
+[profiles.Construction_Vehicles_Detection_v10i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Construction Vehicles Detection.v10i.yolov11/data.yaml"
+target_names = "Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Construction_Vehicles_Detection_v10i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.Construction_Vehicles_Detection_v10i_yolov11.cvtlabelme]
+mapping = "0:Crane"
+overwrite = false
+
+[profiles.Construction_Equipment_v6i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Construction_Equipment.v6i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Construction_Equipment_v6i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.Construction_Equipment_v6i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.Construction_Equipment_v6i_yolov12.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Construction_Equipment.v6i.yolov12/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Construction_Equipment_v6i_yolov12.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.Construction_Equipment_v6i_yolov12.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.CraneCraneCrane_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/CraneCraneCrane.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.CraneCraneCrane_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.CraneCraneCrane_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.Crane_Alert_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Crane_Alert.v1i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Crane_Alert_v1i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.Crane_Alert_v1i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.Dissertation_-with_annotations_in_other_data_base-_v3i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Dissertation -with annotations in other data base-.v3i.yolov11/data.yaml"
+target_names = "Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Dissertation_-with_annotations_in_other_data_base-_v3i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.Dissertation_-with_annotations_in_other_data_base-_v3i_yolov11.cvtlabelme]
+mapping = "0:Crane"
+overwrite = false
+
+[profiles.SAFTEY_v2i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/SAFTEY.v2i.yolov11/data.yaml"
+target_names = "Tower Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.SAFTEY_v2i_yolov11.reindex]
+mapping = "13:0"
+inplace = true
+
+[profiles.SAFTEY_v2i_yolov11.cvtlabelme]
+mapping = "0:Tower Crane"
+overwrite = false
+
+[profiles.Tower_Crane_Component_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Tower Crane Component.v1i.yolov11/data.yaml"
+target_names = "Tower Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Tower_Crane_Component_v1i_yolov11.reindex]
+mapping = "3:0"
+inplace = true
+
+[profiles.Tower_Crane_Component_v1i_yolov11.cvtlabelme]
+mapping = "0:Tower Crane"
+overwrite = false
+
+[profiles.Tower_Crane_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Tower Crane.v1i.yolov11/data.yaml"
+target_names = "Tower Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Tower_Crane_v1i_yolov11.reindex]
+mapping = "3:0"
+inplace = true
+
+[profiles.Tower_Crane_v1i_yolov11.cvtlabelme]
+mapping = "0:Tower Crane"
+overwrite = false
+
+[profiles.Vehcle_classifiation_v17i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Vehcle classifiation.v17i.yolov11/data.yaml"
+target_names = "mobile crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Vehcle_classifiation_v17i_yolov11.reindex]
+mapping = "2:0"
+inplace = true
+
+[profiles.Vehcle_classifiation_v17i_yolov11.cvtlabelme]
+mapping = "0:mobile crane"
+overwrite = false
+
+[profiles.Vehicles_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Vehicles.v1i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.Vehicles_v1i_yolov11.reindex]
+mapping = "7:0"
+inplace = true
+
+[profiles.Vehicles_v1i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.apoce-aerial-photographs-for-object-detection-of-construction-equipment-6raie-ur6qc-fsod-absn_v4i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/apoce-aerial-photographs-for-object-detection-of-construction-equipment-6raie-ur6qc-fsod-absn.v4i.yolov11/data.yaml"
+target_names = "tower-crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.apoce-aerial-photographs-for-object-detection-of-construction-equipment-6raie-ur6qc-fsod-absn_v4i_yolov11.reindex]
+mapping = "6:0"
+inplace = true
+
+[profiles.apoce-aerial-photographs-for-object-detection-of-construction-equipment-6raie-ur6qc-fsod-absn_v4i_yolov11.cvtlabelme]
+mapping = "0:tower-crane"
+overwrite = false
+
+[profiles.can_cau_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/can_cau.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.can_cau_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.can_cau_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.construction_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/construction.v1i.yolov11/data.yaml"
+target_names = "Tower Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.construction_v1i_yolov11.reindex]
+mapping = "2:0"
+inplace = true
+
+[profiles.construction_v1i_yolov11.cvtlabelme]
+mapping = "0:Tower Crane"
+overwrite = false
+
+[profiles.crane_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/crane.v1i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.crane_v1i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.crane_v1i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.crane_v3i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/crane.v3i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.crane_v3i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.crane_v3i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.crane_detection_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/crane_detection.v1i.yolov11/data.yaml"
+target_names = "mobile crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.crane_detection_v1i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.crane_detection_v1i_yolov11.cvtlabelme]
+mapping = "0:mobile crane"
+overwrite = false
+
+[profiles.data_v3i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/data.v3i.yolov11/data.yaml"
+target_names = "crane,tower-crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.data_v3i_yolov11.reindex]
+mapping = "11:0,18:1"
+inplace = true
+
+[profiles.data_v3i_yolov11.cvtlabelme]
+mapping = "0:crane,1:tower-crane"
+overwrite = false
+
+[profiles.datathon_test100_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/datathon_test100.v1i.yolov11/data.yaml"
+target_names = "Crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.datathon_test100_v1i_yolov11.reindex]
+mapping = "2:0"
+inplace = true
+
+[profiles.datathon_test100_v1i_yolov11.cvtlabelme]
+mapping = "0:Crane"
+overwrite = false
+
+[profiles.find-crane_v1i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/find-crane.v1i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.find-crane_v1i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.find-crane_v1i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.sand_dump_v13i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/sand_dump.v13i.yolov11/data.yaml"
+target_names = "crane,rocks-with-crane,sand with crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.sand_dump_v13i_yolov11.reindex]
+mapping = "0:0,5:1,9:2"
+inplace = true
+
+[profiles.sand_dump_v13i_yolov11.cvtlabelme]
+mapping = "0:crane,1:rocks-with-crane,2:sand with crane"
+overwrite = false
+
+[profiles.street-sweep_v3i_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/street-sweep.v3i.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.street-sweep_v3i_yolov11.reindex]
+mapping = "0:0"
+inplace = true
+
+[profiles.street-sweep_v3i_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false
+
+[profiles.xml_to_yolo_tes_v6-generate_datas_yolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/xml_to_yolo_tes.v6-generate_datas.yolov11/data.yaml"
+target_names = "crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = true
+dry_run = false
+debug = false
+
+[profiles.xml_to_yolo_tes_v6-generate_datas_yolov11.reindex]
+mapping = "1:0"
+inplace = true
+
+[profiles.xml_to_yolo_tes_v6-generate_datas_yolov11.cvtlabelme]
+mapping = "0:crane"
+overwrite = false

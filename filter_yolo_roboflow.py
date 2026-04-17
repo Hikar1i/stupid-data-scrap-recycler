@@ -86,6 +86,12 @@ def _alert(message: str) -> None:
     print("!" * 90)
 
 
+def _warn(message: str) -> None:
+    print("*" * 90)
+    print(f"[WARNING] {message}")
+    print("*" * 90)
+
+
 def _sanitize_name(name: str) -> str:
     cleaned = name.strip().replace("/", "_").replace("\\", "_").replace(" ", "-")
     return cleaned if cleaned else "unknown"
@@ -271,8 +277,16 @@ def _derive_labels_from_images(images_dir: Path) -> Optional[Path]:
     return None
 
 
-def resolve_split_paths(args: argparse.Namespace, data_yaml: Dict[str, Any], data_yaml_path: Path) -> Tuple[List[SplitPaths], List[str]]:
+def resolve_split_paths(args: argparse.Namespace, data_yaml: Dict[str, Any], data_yaml_path: Path) -> Tuple[List[SplitPaths], List[str], List[str]]:
+    """
+    解析各 split（train/val/test）的 images/labels 目录。
+
+    返回值：(有效 split 列表, 致命错误列表, 非致命警告列表)
+    - 致命错误：用户手动指定（--val-images 等）的路径不存在，或完全找不到可用 split
+    - 非致命警告：data.yaml 中声明的路径在磁盘上不存在（该 split 跳过，继续处理其余 split）
+    """
     errors: List[str] = []
+    warnings: List[str] = []
     result: List[SplitPaths] = []
 
     split_specs = [
@@ -286,7 +300,9 @@ def resolve_split_paths(args: argparse.Namespace, data_yaml: Dict[str, Any], dat
         if images_override is None and not yaml_images_value:
             continue
 
-        if images_override is not None:
+        from_override = images_override is not None
+
+        if from_override:
             images_dir = images_override.expanduser().resolve()
         else:
             if not isinstance(yaml_images_value, str):
@@ -295,11 +311,16 @@ def resolve_split_paths(args: argparse.Namespace, data_yaml: Dict[str, Any], dat
             images_dir = resolve_roboflow_relative(data_yaml_path.parent, yaml_images_value)
 
         if not images_dir.is_dir():
-            errors.append(f"{yaml_key} images directory invalid: {images_dir}")
+            msg = f"{yaml_key} images directory not found, skipping this split: {images_dir}"
+            if from_override:
+                errors.append(msg)
+            else:
+                warnings.append(msg)
             continue
 
         if labels_override is not None:
             labels_dir = labels_override.expanduser().resolve()
+            from_labels_override = True
         else:
             derived = _derive_labels_from_images(images_dir)
             if derived is None:
@@ -308,9 +329,14 @@ def resolve_split_paths(args: argparse.Namespace, data_yaml: Dict[str, Any], dat
                 )
                 continue
             labels_dir = derived
+            from_labels_override = False
 
         if not labels_dir.is_dir():
-            errors.append(f"{yaml_key} labels directory invalid: {labels_dir}")
+            msg = f"{yaml_key} labels directory not found, skipping this split: {labels_dir}"
+            if from_labels_override:
+                errors.append(msg)
+            else:
+                warnings.append(msg)
             continue
 
         result.append(
@@ -325,7 +351,7 @@ def resolve_split_paths(args: argparse.Namespace, data_yaml: Dict[str, Any], dat
     if not result:
         errors.append("No valid split found to process")
 
-    return result, errors
+    return result, errors, warnings
 
 
 def find_image_file(images_dir: Path, stem: str) -> Optional[Path]:
@@ -386,10 +412,13 @@ def main() -> int:
         data_yaml_obj = load_data_yaml(data_yaml_path)
         names = parse_names(data_yaml_obj.get("names"), data_yaml_obj.get("nc"))
         target_ids, target_names = resolve_targets(args.target_names, args.target_ids, names)
-        split_paths, split_errors = resolve_split_paths(args, data_yaml_obj, data_yaml_path)
+        split_paths, split_errors, split_warnings = resolve_split_paths(args, data_yaml_obj, data_yaml_path)
     except Exception as e:
         _alert(str(e))
         return 1
+
+    for warn in split_warnings:
+        _warn(warn)
 
     if split_errors:
         for err in split_errors:
