@@ -7,7 +7,7 @@
         --scan-dir /path/to/datasets \\
         --output-config my_filter.toml \\
         --keywords "crane" \\
-        --output-root /path/to/output
+        --filter-output-root /path/to/output
 
     python3 gen_roboflow_filter_config.py \\
         --scan-dir /path/to/datasets \\
@@ -90,11 +90,11 @@ def parse_args() -> argparse.Namespace:
         help="匹配时区分大小写，默认不区分",
     )
     parser.add_argument(
-        "--output-root",
+        "--filter-output-root",
         default=None,
         metavar="DIR",
         help=(
-            "过滤结果输出目录。"
+            "写入生成配置中的过滤结果输出目录（即 filter_yolo_roboflow.py 的 --output-root）。"
             "也可在模板文件的 [filter] 节配置 output_root 字段（CLI 参数优先）。"
             "两者必须存在其一，否则报错退出。"
         ),
@@ -419,11 +419,11 @@ def main() -> int:
         cvtlabelme_cfg = dict(_DEFAULT_CVTLABELME)
 
     # ── 确定 output_root（CLI 优先 > 模板 > 报错）─────────────────────────────
-    output_root: Optional[str] = args.output_root or template_output_root
+    output_root: Optional[str] = args.filter_output_root or template_output_root
     if not output_root:
         print(
             "[错误] 过滤结果输出目录未指定。\n"
-            "  请通过 --output-root <目录> 传入，"
+            "  请通过 --filter-output-root <目录> 传入，"
             "或在模板文件的 [filter] 节中配置 output_root 字段（两者必须存在其一）。",
             file=sys.stderr,
         )

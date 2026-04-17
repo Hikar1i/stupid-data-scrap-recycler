@@ -575,7 +575,7 @@ python3 filter_yolo_roboflow_wrap.py --config-name my_pipeline --print-command
 
 - `--overwrite`：若目标配置文件已存在则覆盖，默认不覆盖。
 - `--case-sensitive`：匹配时区分大小写，默认不区分。
-- `--output-root <DIR>`：过滤结果输出目录。与模板中 `[filter].output_root` 必须存在其一，CLI 参数优先。
+- `--filter-output-root <DIR>`：写入生成配置中的过滤结果输出目录（即 `filter_yolo_roboflow.py` 的 `--output-root`）。与模板中 `[filter].output_root` 必须存在其一，CLI 参数优先。
 - `--template <FILE>`：配置模板文件名（自动在 `configs/_template/` 下查找）或绝对/相对路径。未指定时使用内置默认值并生成完整三阶段配置。
 
 ## 配置模板
@@ -612,7 +612,7 @@ python3 gen_roboflow_filter_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config crane_filter.toml \
   --keywords "crane" \
-  --output-root /path/to/output
+  --filter-output-root /path/to/output
 ```
 
 ### 2) 多关键词匹配（OR 逻辑）
@@ -622,7 +622,7 @@ python3 gen_roboflow_filter_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config crane_filter.toml \
   --keywords "crane,tower crane,boom" \
-  --output-root /path/to/output
+  --filter-output-root /path/to/output
 ```
 
 ### 3) 使用模板文件（output_root 在模板中配置）
@@ -642,7 +642,7 @@ python3 gen_roboflow_filter_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config /abs/path/to/output.toml \
   --keywords "Crane,Tower Crane" \
-  --output-root /path/to/output \
+  --filter-output-root /path/to/output \
   --case-sensitive \
   --overwrite
 ```
