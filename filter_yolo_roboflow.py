@@ -99,9 +99,9 @@ def _sanitize_name(name: str) -> str:
 
 def _short_dataset_name(data_yaml: Path) -> str:
     base = data_yaml.parent.name
-    if len(base) <= 20:
+    if len(base) <= 40:
         return base
-    return f"{base[:10]}.{base[-10:]}"
+    return f"{base[:20]}.{base[-20:]}"
 
 
 def _parse_simple_yaml(path: Path) -> Dict[str, Any]:
