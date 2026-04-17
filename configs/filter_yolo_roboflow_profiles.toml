@@ -1,8 +1,8 @@
-# Named profiles for filter_yolo_roboflow_wrap.py
-# Use:
-#   python3 filter_yolo_roboflow_wrap.py --config-name <profile_name>
-# or:
-#   python3 filter_yolo_roboflow_wrap.py --config-file /path/to/xxx.toml --config-name <profile_name>
+# filter_yolo_roboflow_wrap.py 的命名配置文件
+# 使用方式：
+#   python3 filter_yolo_roboflow_wrap.py --config-name <profile名称>
+# 或指定配置文件：
+#   python3 filter_yolo_roboflow_wrap.py --config-file /path/to/xxx.toml --config-name <profile名称>
 
 [profiles.demo_by_names_split]
 data_yaml = "/home/ieds/datasets/helmet-det/A-PersonalProtectiveEquipment-CombinedModel.v1i.yolo26/ORIGIN/data.yaml"
@@ -27,3 +27,40 @@ output_root = "/path/to/output"
 merge = "false"
 dry_run = true
 debug = false
+
+# ── Pipeline profile 示例（filter → reindex → cvtlabelme） ─────────────
+[profiles.demo_pipeline.filter]
+data_yaml = "/path/to/data.yaml"
+target_names = "Excavator,Gloves"
+output_root = "/path/to/output"
+merge = "true"
+dry_run = false
+debug = false
+
+[profiles.demo_pipeline.reindex]
+mapping = "0:0,2:1"
+inplace = false
+
+[profiles.demo_pipeline.cvtlabelme]
+mapping = "0:Excavator,1:Gloves"
+overwrite = false
+
+
+
+
+
+[profiles.20250217v2iyolov11.filter]
+data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/-----20250217.v2i.yolov11/data.yaml"
+target_names = "crane,tower crane"
+output_root = "/home/ieds/Pictures/crane_boom_roboflow"
+merge = "true"
+dry_run = false
+debug = false
+
+[profiles.20250217v2iyolov11.reindex]
+mapping = "3:0,6:1"
+inplace = false
+
+[profiles.20250217v2iyolov11.cvtlabelme]
+mapping = "0:crane,1:tower crane"
+overwrite = false

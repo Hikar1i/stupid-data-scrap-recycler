@@ -1,4 +1,17 @@
 #!/usr/bin/env python3
+"""
+filter_yolo_roboflow.py 的配置驱动 wrapper，可选支持流水线阶段。
+
+嵌套 TOML 格式（pipeline 模式）：
+    [profiles.<名称>.filter]      # 必选，过滤阶段
+    [profiles.<名称>.reindex]     # 可选，过滤后运行 remap_yolo_labels.py
+    [profiles.<名称>.cvtlabelme]  # 可选，reindex/filter 后运行 yolo_to_labelme.py
+
+展平格式（仅过滤）仍向下兼容：
+    [profiles.<名称>]
+    target_names = "Excavator"
+    ...
+"""
 import argparse
 import subprocess
 import sys
@@ -9,7 +22,7 @@ from typing import Any, Dict, List, Optional, Tuple
 DEFAULT_CONFIG_RELATIVE_PATH = Path("configs/filter_yolo_roboflow_profiles.toml")
 TARGET_SCRIPT_NAME = "filter_yolo_roboflow.py"
 
-ALLOWED_KEYS = {
+FILTER_ALLOWED_KEYS = {
     "data_yaml",
     "target_names",
     "target_ids",
@@ -28,20 +41,18 @@ ALLOWED_KEYS = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description=(
-            "Load named config from TOML and run filter_yolo_roboflow.py with validated args"
-        )
+        description="从 TOML 加载命名配置并驱动 filter_yolo_roboflow.py 执行。"
     )
-    parser.add_argument("--config-name", required=True, help="Profile name in config file")
+    parser.add_argument("--config-name", required=True, help="配置文件中的 profile 名称")
     parser.add_argument(
         "--config-file",
         default=None,
         help=(
-            "Config TOML path (absolute or relative). If omitted, use default: "
+            "TOML 配置文件路径（绝对或相对）。省略时使用默认路径："
             f"{DEFAULT_CONFIG_RELATIVE_PATH}"
         ),
     )
-    parser.add_argument("--print-command", action="store_true", help="Print command before execution")
+    parser.add_argument("--print-command", action="store_true", help="执行前打印最终命令")
     return parser.parse_args()
 
 
@@ -139,7 +150,7 @@ def _normalize_path(value: Any, key: str, required: bool, errors: List[str]) -> 
 def validate_profile(profile: Dict[str, Any], profile_name: str) -> Tuple[Dict[str, Any], List[str]]:
     errors: List[str] = []
 
-    unknown = [k for k in profile.keys() if k not in ALLOWED_KEYS]
+    unknown = [k for k in profile.keys() if k not in FILTER_ALLOWED_KEYS]
     if unknown:
         errors.append(f"[{profile_name}] unknown keys: {unknown}")
 
@@ -202,7 +213,7 @@ def validate_profile(profile: Dict[str, Any], profile_name: str) -> Tuple[Dict[s
     return normalized, errors
 
 
-def build_command(validated: Dict[str, Any]) -> List[str]:
+def build_command(validated: Dict[str, Any], print_output_dir: bool = False) -> List[str]:
     cmd: List[str] = [sys.executable, str((script_root() / TARGET_SCRIPT_NAME).resolve())]
 
     cmd.extend(["--data-yaml", validated["data_yaml"]])
@@ -232,8 +243,21 @@ def build_command(validated: Dict[str, Any]) -> List[str]:
         cmd.append("--dry-run")
     if validated.get("debug"):
         cmd.append("--debug")
+    if print_output_dir:
+        cmd.append("--print-output-dir")
 
     return cmd
+
+
+PIPELINE_STAGE_KEYS = {"filter", "reindex", "cvtlabelme"}
+
+
+def is_pipeline_profile(profile: Dict[str, Any]) -> bool:
+    """判断该 profile 是否为嵌套 pipeline 格式。
+
+    当 'filter'、'reindex'、'cvtlabelme' 中任意一个为字典子表时返回 True。
+    """
+    return any(isinstance(profile.get(k), dict) for k in PIPELINE_STAGE_KEYS)
 
 
 def main() -> int:
@@ -242,25 +266,85 @@ def main() -> int:
     config_path = resolve_config_path(args.config_file)
     try:
         doc = load_toml(config_path)
-        profile = get_profile(doc, args.config_name)
+        raw_profile = get_profile(doc, args.config_name)
     except Exception as e:
-        print(f"[ERROR] Failed to load config: {e}", file=sys.stderr)
+        print(f"[错误] 加载配置失败：{e}", file=sys.stderr)
         return 1
 
-    validated, errors = validate_profile(profile, args.config_name)
-    if errors:
-        print(f"[ERROR] Config '{args.config_name}' is invalid:", file=sys.stderr)
-        for err in errors:
-            print(f"  - {err}", file=sys.stderr)
+    # ── 检测 profile 格式 ────────────────────────────────────────────────
+    if is_pipeline_profile(raw_profile):
+        filter_cfg = raw_profile.get("filter")  # 无 filter 子表时为 None
+        reindex_cfg = raw_profile.get("reindex")  # 缺失时为 None
+        cvtlabelme_cfg = raw_profile.get("cvtlabelme")  # 缺失时为 None
+    else:
+        # 展平格式（将整个 profile 作为 filter 配置）
+        filter_cfg = raw_profile
+        reindex_cfg = None
+        cvtlabelme_cfg = None
+
+    has_filter = filter_cfg is not None
+    has_pipeline = reindex_cfg is not None or cvtlabelme_cfg is not None
+
+    if has_filter:
+        validated, errors = validate_profile(filter_cfg, args.config_name)
+        if errors:
+            print(f"[ERROR] Config '{args.config_name}' filter section is invalid:", file=sys.stderr)
+            for err in errors:
+                print(f"  - {err}", file=sys.stderr)
+            return 1
+        command = build_command(validated, print_output_dir=has_pipeline)
+    else:
+        command = None
+
+    if not has_filter and not has_pipeline:
+        print("[错误] Profile 中无有效的阶段节（filter/reindex/cvtlabelme）。", file=sys.stderr)
         return 1
 
-    command = build_command(validated)
-    if args.print_command:
-        print("Command:")
+    if args.print_command and command:
+        print("最终命令：")
         print(" ".join(command))
 
-    result = subprocess.run(command, cwd=str(script_root()))
-    return result.returncode
+    if not has_pipeline:
+        # 仅过滤模式直接执行
+        result = subprocess.run(command, cwd=str(script_root()))
+        return result.returncode
+
+    # ── 执行管道 ─────────────────────────────────────────────────────────
+    from pipeline_utils import run_stage, run_pipeline_stages  # type: ignore
+
+    filter_output_dirs: List[Path] = []
+    if has_filter:
+        print("=" * 90)
+        print("Pipeline 阶段：filter（filter_yolo_roboflow）")
+        print("=" * 90)
+        filter_output_dirs = run_stage(command, "filter", args.print_command)
+        if not filter_output_dirs:
+            print(
+                "[pipeline] 警告：filter 阶段未输出任何 OUTPUT_DIR 行，"
+                "管道无法继续。",
+                file=sys.stderr,
+            )
+            return 1
+    else:
+        # 无 filter 阶段，第一个阶段配置中必须有 source_dir
+        first_cfg = reindex_cfg if reindex_cfg is not None else cvtlabelme_cfg
+        source_dir_raw = first_cfg.get("source_dir") if first_cfg else None
+        if not source_dir_raw:
+            print(
+                "[错误] 无 [filter] 节且第一个管道阶段配置中无 'source_dir' 字段。",
+                file=sys.stderr,
+            )
+            return 1
+        filter_output_dirs = [Path(source_dir_raw).expanduser().resolve()]
+
+    run_pipeline_stages(
+        filter_output_dirs=filter_output_dirs,
+        script_root=script_root(),
+        reindex_cfg=reindex_cfg,
+        cvtlabelme_cfg=cvtlabelme_cfg,
+        print_command=args.print_command,
+    )
+    return 0
 
 
 if __name__ == "__main__":

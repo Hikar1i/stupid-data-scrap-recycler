@@ -72,6 +72,11 @@ def parse_args() -> argparse.Namespace:
 
     parser.add_argument("--dry-run", action="store_true", help="Preview only, do not copy/write")
     parser.add_argument("--debug", action="store_true", help="Print detailed path and processing info")
+    parser.add_argument(
+        "--print-output-dir",
+        action="store_true",
+        help="Print OUTPUT_DIR:<path> lines at the end (used by pipeline wrappers).",
+    )
     return parser.parse_args()
 
 
@@ -523,6 +528,10 @@ def main() -> int:
         print(f"  images_missing: {stats['images_missing']}")
         print(f"  labels_written: {stats['labels_written']}")
         print("-" * 90)
+
+    if args.print_output_dir:
+        for run in run_specs:
+            print(f"OUTPUT_DIR:{run.run_dir}")
 
     print("=" * 90)
     return 0

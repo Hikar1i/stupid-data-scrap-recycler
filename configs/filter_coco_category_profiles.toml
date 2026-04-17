@@ -1,18 +1,22 @@
-# Named profiles for filter_coco_category_wrap.py
-# Use:
-#   python3 filter_coco_category_wrap.py --config-name <profile_name>
-# or:
-#   python3 filter_coco_category_wrap.py --config-file /path/to/xxx.toml --config-name <profile_name>
+# filter_coco_category_wrap.py 的命名配置文件
+# 使用方式：
+#   python3 filter_coco_category_wrap.py --config-name <profile名称>
+# 或指定配置文件：
+#   python3 filter_coco_category_wrap.py --config-file /path/to/xxx.toml --config-name <profile名称>
+#
+# 支持两种 profile 格式：
+#   1. 展平格式（仅过滤）：[profiles.<名称>] 直接包含过滤键
+#   2. 嵌套格式（pipeline）：[profiles.<名称>.filter] + 可选 [profiles.<名称>.reindex]
+#                             + 可选 [profiles.<名称>.cvtlabelme]
 
 [profiles.demo_by_name]
-category_names = "boom"
-# json_dir = "/home/ieds/datasets/nfs6399/dataset/work/labels/coco/object_model"
-json_file = "/home/ieds/datasets/nfs6399/dataset/work/labels/coco/object_model/test.json"
+category_names = "boom,fence"
+json_dir = "/home/ieds/datasets/nfs6399/dataset/work/labels/coco/object_model"
 label_root = "/home/ieds/datasets/nfs6399/dataset/work/labels/yolo/object_model"
 output_root = "/home/ieds/Pictures/boom_nfs6399"
 merge = "false"
-dry_run = true
-debug = true
+dry_run = false
+debug = false
 
 [profiles.demo_by_id]
 category_ids = "1"
@@ -22,3 +26,27 @@ output_root = "/path/to/output"
 merge = "false"
 dry_run = false
 debug = false
+
+# ── Pipeline profile 示例（filter → reindex → cvtlabelme） ─────────────────
+# 小节存在即开启对应阶段：
+#   仅 [filter]               → 仅过滤
+#   [filter] + [reindex]       → 过滤后重映射标签序号
+#   [filter] + [cvtlabelme]    → 过滤后转 labelme（无 reindex 时打印警告）
+#   三个小节全开启         → 完整 pipeline
+
+[profiles.demo_pipeline.filter]
+category_names = "boom,fence"
+json_dir = "/path/to/coco/jsons"
+label_root = "/path/to/labels/yolo/object_model"
+output_root = "/path/to/output"
+merge = "true"
+dry_run = false
+debug = false
+
+[profiles.demo_pipeline.reindex]
+mapping = "11:0,8:1"
+inplace = false
+
+[profiles.demo_pipeline.cvtlabelme]
+mapping = "0:boom,1:fence"
+overwrite = false

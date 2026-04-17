@@ -102,6 +102,11 @@ def parse_args() -> argparse.Namespace:
             "false: one directory per category"
         ),
     )
+    parser.add_argument(
+        "--print-output-dir",
+        action="store_true",
+        help="Print OUTPUT_DIR:<path> lines at the end (used by pipeline wrappers).",
+    )
 
     return parser.parse_args()
 
@@ -500,6 +505,10 @@ def main() -> None:
         print(f"  image_name_conflicts: {stats['image_name_conflicts']}")
         print(f"  label_name_conflicts: {stats['label_name_conflicts']}")
         print("-" * 90)
+
+    if args.print_output_dir:
+        for run in run_specs:
+            print(f"OUTPUT_DIR:{run.run_dir}")
 
     print("=" * 90)
 

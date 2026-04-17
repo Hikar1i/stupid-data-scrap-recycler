@@ -1,6 +1,21 @@
-# COCO Category Filter & Copy Script
+# YOLO Dataset Filter & Conversion Toolkit
 
-该项目提供一个脚本 `filter_coco_category.py`，用于从 COCO 标注中按类别筛选图像，并将图像与对应标签拷贝到目标目录。
+该项目包含以下脚本，可单独使用，也可通过 wrapper 串联为一键式 pipeline：
+
+| 脚本 | 功能 |
+|---|---|
+| `filter_coco_category.py` | 从 COCO JSON 按类别筛选图像和标签 |
+| `filter_yolo_roboflow.py` | 从 Roboflow YOLO 数据集按类别筛选 |
+| `remap_yolo_labels.py` | YOLO 标签序号重映射 |
+| `yolo_to_labelme.py` | YOLO 标签转 labelme JSON 格式 |
+| `filter_coco_category_wrap.py` | COCO filter wrapper，支持 pipeline |
+| `filter_yolo_roboflow_wrap.py` | Roboflow filter wrapper，支持 pipeline |
+
+---
+
+# filter_coco_category.py — COCO 类别过滤
+
+该脚本从 COCO 标注中按类别筛选图像，并将图像与对应标签拷贝到目标目录。
 
 ## 功能用途
 
@@ -19,9 +34,9 @@
 ## 运行环境
 
 - Python 3.8+
-- 仅依赖 Python 标准库，无需额外安装第三方包
-
-> 说明：`filter_coco_category_wrap.py` 读取 TOML 配置时优先使用 Python 3.11+ 的 `tomllib`。若低版本 Python 运行 wrapper，请先安装 `tomli`：`pip install tomli`。
+- `filter_coco_category.py`、`filter_yolo_roboflow.py`、`remap_yolo_labels.py` 仅依赖标准库
+- `yolo_to_labelme.py` 需要 **Pillow**（用于读取图像尺寸）：`pip install Pillow`
+- wrapper 脚本读取 TOML 时优先使用 Python 3.11+ 内置 `tomllib`；低版本请安装 `tomli`：`pip install tomli`
 
 ## 参数说明
 
@@ -361,3 +376,156 @@ python3 filter_yolo_roboflow_wrap.py --config-name demo_by_names_split
    - 标签源路径：`<label_root>/<parent>/<stem>.txt`
 5. 按 `--merge` 策略组织输出任务并执行（或 dry-run 预览）。
 6. 输出每个 JSON 的匹配统计和每个输出任务的拷贝统计。
+
+---
+
+# remap_yolo_labels.py — YOLO 标签序号重映射
+
+将 YOLO 标签文件中的类别 ID 替换为新的 ID（如 `11→0, 8→1`）。
+
+## 参数
+
+- `--source-dir <path>`（必填）：YOLO 数据集根目录或单个 split 目录。脚本递归查找所有 `labels/` 子目录。
+- `--mapping <src:dst,...>`（必填）：映射关系，如 `11:0,8:1`。
+- `--inplace true|false`（默认 `false`）：是否直接修改原始标签文件。`true` 时 `--output-dir` 无效。
+- `--output-dir <path>`（可选）：输出目录。未指定时，在每个 `labels/` 的同级目录创建 `labels_remapping_<timestamp>/`。
+- `--dry-run`：预览，不写入任何文件。
+- `--debug`：打印每行替换/跳过详情。
+
+## 冲突检测
+
+当目标 ID 已存在于同一文件的其他行时，该行替换被跳过（其他行正常替换）。运行结束后会以醒目格式打印冲突统计，**提示用户检查 mapping 是否正确后重新运行**。
+
+## 使用示例
+
+```bash
+python3 remap_yolo_labels.py \
+  --source-dir /path/to/yolo/dataset \
+  --mapping "11:0,8:1" \
+  --dry-run --debug
+```
+
+---
+
+# yolo_to_labelme.py — YOLO 转 labelme JSON
+
+将 YOLO 格式 `*.txt` 标签转换为 labelme 的 `*.json` 格式（矩形框，4 角点坐标）。
+
+## 参数
+
+- `--source-dir <path>`（必填）：YOLO 数据集根目录或单个 split 目录。脚本自动匹配所有 `images/+labels/` 对。
+- `--mapping <id:name,...>` / `--classes-file <path>`（二选一，必填）：
+  - `--mapping`：内联映射，支持含空格的类别名，如 `0:cat,6:No helmet,7:Safety Vest`。
+  - `--classes-file`：txt 文件，第一行 = ID 0，逐行对应类别名（与 classes.txt 格式一致）。
+- `--output-dir <path>`（可选）：未指定时 JSON 写入 `images/` 目录（与图像共存）；指定时按源目录结构输出到 `<output_dir>/<split>/labelme_<timestamp>/`。
+- `--overwrite true|false`（默认 `false`）：已存在的 JSON 是否覆盖。
+- `--dry-run`：预览，不创建文件。
+- `--debug`：打印每个文件的转换路径。
+
+## 转换规则
+
+- YOLO `cx cy w h`（归一化）→ labelme 矩形 4 角点（像素坐标）：左上→右上→右下→左下。
+- 图像宽高通过 Pillow 读取（**需安装 Pillow**）。
+- 标签中未在 mapping 中定义的 ID 转换为 `"unknown"`，并以醒目警告输出。
+
+## 使用示例
+
+```bash
+# 使用 classes.txt
+python3 yolo_to_labelme.py \
+  --source-dir /path/to/yolo/dataset \
+  --classes-file /path/to/classes.txt \
+  --output-dir /path/to/labelme_output
+
+# 使用内联 mapping（含空格类别名）
+python3 yolo_to_labelme.py \
+  --source-dir /path/to/yolo/dataset \
+  --mapping "0:cat,6:No helmet,7:Safety Vest" \
+  --dry-run
+```
+
+---
+
+# Pipeline — 一键过滤→重设序号→转 labelme
+
+两个 wrapper 脚本（`filter_coco_category_wrap.py` 和 `filter_yolo_roboflow_wrap.py`）均支持 pipeline 模式，可将三个阶段串联：
+
+```
+filter → remap_yolo_labels → yolo_to_labelme
+```
+
+## 配置格式（嵌套 TOML）
+
+通过在 profile 中添加 `[profiles.<name>.reindex]` 和/或 `[profiles.<name>.cvtlabelme]` 子节来开启对应阶段。**子节存在即开启，缺失即跳过**。
+
+```toml
+[profiles.my_pipeline.filter]
+category_names = "boom,fence"
+json_dir = "/path/to/coco/jsons"
+label_root = "/path/to/labels/yolo"
+output_root = "/path/to/output"
+merge = "true"
+
+[profiles.my_pipeline.reindex]
+mapping = "11:0,8:1"
+inplace = false
+
+[profiles.my_pipeline.cvtlabelme]
+mapping = "0:boom,1:fence"
+overwrite = false
+```
+
+## 各阶段配置键
+
+### `[...filter]` 键
+与对应 filter 脚本参数一致（见各 filter 脚本参数说明）。
+
+### `[...reindex]` 键
+| 键 | 说明 |
+|---|---|
+| `mapping` | 必填，`src:dst,...` 格式 |
+| `inplace` | `true/false`，默认 `false` |
+| `output_dir` | 可选，reindex 输出目录 |
+| `dry_run` | 布尔 |
+| `debug` | 布尔 |
+
+### `[...cvtlabelme]` 键
+| 键 | 说明 |
+|---|---|
+| `mapping` | 与 `classes_file` 二选一，`id:name,...` 格式 |
+| `classes_file` | classes.txt 路径 |
+| `output_dir` | 可选，JSON 输出目录 |
+| `overwrite` | `true/false`，默认 `false` |
+| `dry_run` | 布尔 |
+| `debug` | 布尔 |
+
+## Pipeline 阶段链接原理
+
+- filter 脚本在 pipeline 模式下会打印 `OUTPUT_DIR:<path>` 行（通过 `--print-output-dir` 标志触发）。
+- wrapper 解析这些路径后，将其作为 reindex 的 `--source-dir` 输入。
+- 若 reindex 的 `inplace=false`，reindex 同样打印 `OUTPUT_DIR:<path>`，传给 cvtlabelme；若 `inplace=true`，则 cvtlabelme 直接使用 filter 输出目录。
+- filter 产生多个输出目录（`merge=false` + 多类别）时，reindex/cvtlabelme 对每个目录独立运行。
+
+## ⚠️ 边界情况：仅配置 cvtlabelme 无 filter
+
+若 wrapper profile 中无 `[...filter]` 节，但有 `[...cvtlabelme]` 节，wrapper 无法自动推断源目录，cvtlabelme 阶段的 `source_dir` 需在 `[...cvtlabelme]` 节中显式提供：
+
+```toml
+[profiles.cvtlabelme_only.cvtlabelme]
+source_dir = "/path/to/existing/yolo/dataset"
+mapping = "0:cat,1:dog"
+```
+
+同时 wrapper 会打印醒目警告，提示用户 YOLO 标签 ID 未经 reindex 阶段处理，可能大量输出 `unknown` 类别。
+
+## Pipeline 使用示例
+
+```bash
+# COCO filter + reindex + cvtlabelme
+python3 filter_coco_category_wrap.py --config-name my_pipeline
+
+# Roboflow filter + reindex only
+python3 filter_yolo_roboflow_wrap.py --config-name my_pipeline --print-command
+```
+
+旧格式（仅含 filter 参数的扁平 profile）不受影响，向后兼容。
