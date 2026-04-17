@@ -1,3 +1,6 @@
+[meta]
+wrapper_type = "yolo_roboflow"
+
 # filter_yolo_roboflow_wrap.py 的命名配置文件
 # 使用方式：
 #   python3 filter_yolo_roboflow_wrap.py --config-name <profile名称>
@@ -59,7 +62,7 @@ debug = false
 
 [profiles.20250217v2iyolov11.reindex]
 mapping = "3:0,6:1"
-inplace = false
+inplace = true
 
 [profiles.20250217v2iyolov11.cvtlabelme]
 mapping = "0:crane,1:tower crane"

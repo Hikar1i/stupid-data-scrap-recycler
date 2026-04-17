@@ -10,6 +10,7 @@
 | `yolo_to_labelme.py` | YOLO 标签转 labelme JSON 格式 |
 | `filter_coco_category_wrap.py` | COCO filter wrapper，支持 pipeline |
 | `filter_yolo_roboflow_wrap.py` | Roboflow filter wrapper，支持 pipeline |
+| `batch_run_profiles.py` | 批量执行 wrapper 的所有配置段 |
 
 ---
 
@@ -200,9 +201,14 @@ wrapper 会先校验配置，校验不通过则**不会调用** `filter_coco_cat
 
 ### 配置文件示例
 
-默认文件 `configs/filter_coco_category_profiles.toml` 中可写多组配置：
+默认文件 `configs/filter_coco_category_profiles.toml` 中可写多组配置。
+
+> **注意**：配置文件顶部需包含 `[meta]` 节声明 wrapper 类型，供 `batch_run_profiles.py` 校验使用；各 wrapper 脚本本身会忽略该节。
 
 ```toml
+[meta]
+wrapper_type = "coco_category"
+
 [profiles.demo_by_name]
 category_names = "person"
 json_dir = "/path/to/coco/jsons"
@@ -350,7 +356,12 @@ python3 filter_yolo_roboflow.py \
 
 ### 配置示例
 
+> **注意**：配置文件顶部需包含 `[meta]` 节声明 wrapper 类型，供 `batch_run_profiles.py` 校验使用；各 wrapper 脚本本身会忽略该节。
+
 ```toml
+[meta]
+wrapper_type = "yolo_roboflow"
+
 [profiles.demo_by_names_split]
 data_yaml = "/home/ieds/datasets/helmet-det/A-ConstructionSiteSafety.v30-raw-images_latestversion.yolo26/ORIGIN/data.yaml"
 target_names = "Excavator,Gloves"
@@ -413,7 +424,10 @@ python3 remap_yolo_labels.py \
 
 ## 参数
 
-- `--source-dir <path>`（必填）：YOLO 数据集根目录或单个 split 目录。脚本自动匹配所有 `images/+labels/` 对。
+- `--source-dir <path>`（必填）：支持以下三种形式：
+  - YOLO 数据集根目录（含 `train/valid/test` 子目录）；
+  - 单个 split 目录（直接含 `images/` 和 `labels/`）；
+  - pipeline reindex 阶段输出的 `labels_remapping_<timestamp>/` 目录（脚本自动检测同级 `images/`）。
 - `--mapping <id:name,...>` / `--classes-file <path>`（二选一，必填）：
   - `--mapping`：内联映射，支持含空格的类别名，如 `0:cat,6:No helmet,7:Safety Vest`。
   - `--classes-file`：txt 文件，第一行 = ID 0，逐行对应类别名（与 classes.txt 格式一致）。
@@ -529,3 +543,85 @@ python3 filter_yolo_roboflow_wrap.py --config-name my_pipeline --print-command
 ```
 
 旧格式（仅含 filter 参数的扁平 profile）不受影响，向后兼容。
+
+---
+
+# batch_run_profiles.py — 批量执行所有配置段
+
+对 TOML 配置文件中所有有效 profile，逐一调用对应 wrapper 脚本执行，并汇总结果。
+
+## 功能用途
+
+- 读取 TOML 配置文件，列出所有有效/无效配置段（TOML 语法层面）。
+- 在执行前校验 wrapper 脚本类型与配置文件声明类型（`[meta].wrapper_type`）是否匹配，不匹配则拒绝执行。
+- 逐一以子进程方式调用 wrapper，实时流式输出，不引入任何 wrapper 内部依赖（低耦合）。
+- 全部执行完后打印成功/失败汇总；支持 `--fail-fast` 遇错立即终止。
+
+## 配置文件 `[meta]` 节
+
+`batch_run_profiles.py` 通过 TOML 顶部的 `[meta]` 节判断配置文件类型：
+
+| `wrapper_type` 值 | 对应 wrapper 脚本 |
+|---|---|
+| `yolo_roboflow` | `filter_yolo_roboflow_wrap.py` |
+| `coco_category` | `filter_coco_category_wrap.py` |
+
+各 wrapper 脚本本身不读取 `[meta]` 节，向下兼容已有配置文件（只需在文件顶部新增两行）。
+
+## 参数说明
+
+| 参数 | 是否必填 | 说明 |
+|---|---|---|
+| `--wrapper` | 必填 | wrapper 脚本文件名或路径，如 `filter_yolo_roboflow_wrap.py` |
+| `--config-file` | 必填 | TOML 配置文件路径（绝对或相对） |
+| `--dry-run` | 可选 | 仅列出配置段，不实际执行任何命令 |
+| `--print-command` | 可选 | 透传给各 wrapper 子进程，执行前打印最终命令 |
+| `--fail-fast` | 可选 | 遇到首个失败配置段时立即终止（默认：继续执行全部） |
+
+## 使用示例
+
+### 1) 批量执行所有配置段（预览模式）
+
+```bash
+python3 batch_run_profiles.py \
+  --wrapper filter_yolo_roboflow_wrap.py \
+  --config-file configs/filter_yolo_roboflow_profiles.toml \
+  --dry-run
+```
+
+### 2) 正式批量执行，遇错继续（默认行为）
+
+```bash
+python3 batch_run_profiles.py \
+  --wrapper filter_yolo_roboflow_wrap.py \
+  --config-file configs/filter_yolo_roboflow_profiles.toml
+```
+
+### 3) 遇到首个失败立即终止
+
+```bash
+python3 batch_run_profiles.py \
+  --wrapper filter_coco_category_wrap.py \
+  --config-file configs/filter_coco_category_profiles.toml \
+  --fail-fast
+```
+
+### 4) 执行时同步打印各 wrapper 的最终命令
+
+```bash
+python3 batch_run_profiles.py \
+  --wrapper filter_yolo_roboflow_wrap.py \
+  --config-file configs/filter_yolo_roboflow_profiles.toml \
+  --print-command
+```
+
+### 5) wrapper 类型不匹配时的错误示例
+
+```bash
+# 会报错并拒绝执行
+python3 batch_run_profiles.py \
+  --wrapper filter_coco_category_wrap.py \
+  --config-file configs/filter_yolo_roboflow_profiles.toml
+# → [错误] wrapper 类型不匹配！
+```
+

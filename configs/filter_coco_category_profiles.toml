@@ -1,3 +1,6 @@
+[meta]
+wrapper_type = "coco_category"
+
 # filter_coco_category_wrap.py 的命名配置文件
 # 使用方式：
 #   python3 filter_coco_category_wrap.py --config-name <profile名称>
