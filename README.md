@@ -287,7 +287,7 @@ python3 filter_coco_category_wrap.py \
 
 ### 输出目录命名
 
-- 数据集前缀：`[数据集目录名前10字符].[后10字符]`（长度不超过 20 时直接使用全名）
+- 数据集前缀：`[数据集目录名前20字符].[后20字符]`（长度不超过 40 时直接使用全名）
 - 单标签 / 多标签非合并：
   - `[dataset_short]_[label_name]_[timestamp]`
 - 多标签且 `--merge true`：
@@ -442,6 +442,7 @@ python3 remap_yolo_labels.py \
 - YOLO `cx cy w h`（归一化）→ labelme 矩形 4 角点（像素坐标）：左上→右上→右下→左下。
 - 图像宽高通过 Pillow 读取（**需安装 Pillow**）。
 - 标签中未在 mapping 中定义的 ID 转换为 `"unknown"`，并以醒目警告输出。
+- 转换完成后，自动在**数据集根目录**下生成 `classes.txt`（每行一个类别名，行号即 ID，从 0 开始）。若文件已存在且未指定 `--overwrite true` 则跳过。
 
 ## 使用示例
 

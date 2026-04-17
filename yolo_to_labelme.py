@@ -367,6 +367,47 @@ def process_split_pair(
 
 
 # ---------------------------------------------------------------------------
+# classes.txt 输出
+# ---------------------------------------------------------------------------
+
+def resolve_dataset_root(source_dir: Path) -> Path:
+    """
+    从 source_dir 推断数据集根目录。
+
+    - 若 source_dir 本身是 labels 目录（同层存在 images/ 兄弟目录），
+      则根目录为其祖父目录（即 split_dir 的父级，如 merge_timestamp/）。
+    - 否则 source_dir 自身即为数据集根目录。
+    """
+    images_sibling = source_dir.parent / "images"
+    if images_sibling.is_dir():
+        return source_dir.parent.parent
+    return source_dir
+
+
+def write_classes_txt(
+    output_dir: Path,
+    class_map: Dict[int, str],
+    overwrite: bool,
+    dry_run: bool,
+) -> None:
+    """
+    将 class_map 写入 output_dir/classes.txt，每行一个类别名，行号即类别 ID。
+    若 ID 序号有空缺，对应行写空行以保持行号与 ID 的对应关系。
+    """
+    dest = output_dir / "classes.txt"
+    if dest.exists() and not overwrite:
+        print(f"[classes.txt] 已存在跳过（--overwrite true 可覆盖）：{dest}")
+        return
+    max_id = max(class_map.keys())
+    lines = [class_map.get(i, "") for i in range(max_id + 1)]
+    content = "\n".join(lines) + "\n"
+    prefix = "[DRY-RUN] " if dry_run else ""
+    if not dry_run:
+        dest.write_text(content, encoding="utf-8")
+    print(f"[classes.txt] {prefix}写入：{dest}")
+
+
+# ---------------------------------------------------------------------------
 # 入口函数
 # ---------------------------------------------------------------------------
 
@@ -450,6 +491,9 @@ def main() -> int:
         print(f"  skipped_empty:      {stats['skipped_empty']}")
         print(f"  errors:             {stats['error']}")
         print("-" * 90)
+
+    dataset_root = resolve_dataset_root(args.source_dir)
+    write_classes_txt(dataset_root, class_map, overwrite, args.dry_run)
 
     if all_unknown_ids:
         print("!" * 90)
