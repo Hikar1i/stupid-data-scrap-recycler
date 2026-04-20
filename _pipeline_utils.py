@@ -19,7 +19,7 @@ def build_dedup_command(
     dedup_cfg: dict,
     print_output_dir: bool,
 ) -> List[str]:
-    """构建 dedup_yolo_dataset.py 命令。
+    """构建 yolo_dedup.py 命令。
 
     dedup_cfg 支持的键：
       python          (可选) 专用 Python 解释器路径，默认用 sys.executable
@@ -101,7 +101,7 @@ def build_reindex_commands(
     reindex_cfg: dict,
     print_output_dir: bool,
 ) -> List[List[str]]:
-    """为每个源目录构建 remap_yolo_labels.py 命令列表。"""
+    """为每个源目录构建 yolo_remap.py 命令列表。"""
     mapping = reindex_cfg.get("mapping", "")
     if not mapping:
         print("[pipeline] 错误：reindex 配置缺少 'mapping' 字段", file=sys.stderr)
@@ -134,7 +134,7 @@ def build_cvtlabelme_commands(
     cvtlabelme_cfg: dict,
     print_output_dir: bool,
 ) -> List[List[str]]:
-    """为每个源目录构建 yolo_to_labelme.py 命令列表。"""
+    """为每个源目录构建 yolo_to_labelme.py（通用 YOLO→Labelme 转换）命令列表。"""
     mapping = cvtlabelme_cfg.get("mapping", "")
     classes_file = cvtlabelme_cfg.get("classes_file")
 
@@ -200,9 +200,9 @@ def run_pipeline_stages(
         )
         print("!" * 90)
 
-    reindex_script = script_root / "remap_yolo_labels.py"
+    reindex_script = script_root / "yolo_remap.py"
     cvtlabelme_script = script_root / "yolo_to_labelme.py"
-    dedup_script = script_root / "dedup_yolo_dataset.py"
+    dedup_script = script_root / "yolo_dedup.py"
 
     current_sources = list(filter_output_dirs)
 

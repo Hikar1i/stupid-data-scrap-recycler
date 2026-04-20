@@ -4,19 +4,19 @@
 
 | 脚本 | 功能 |
 |---|---|
-| `filter_coco_category.py` | 从 COCO JSON 按类别筛选图像和标签 |
-| `filter_yolo_roboflow.py` | 从 Roboflow YOLO 数据集按类别筛选 |
-| `remap_yolo_labels.py` | YOLO 标签序号重映射 |
+| `coco_filter.py` | 从 COCO JSON 按类别筛选图像和标签 |
+| `roboflow_filter.py` | 从 Roboflow YOLO 数据集按类别筛选 |
+| `yolo_remap.py` | YOLO 标签序号重映射 |
 | `yolo_to_labelme.py` | YOLO 标签转 labelme JSON 格式 |
-| `filter_coco_category_wrap.py` | COCO filter wrapper，支持 pipeline |
-| `filter_yolo_roboflow_wrap.py` | Roboflow filter wrapper，支持 pipeline |
-| `gen_roboflow_filter_config.py` | 批量扫描 Roboflow 数据集目录，按关键词自动生成过滤配置文件 |
+| `coco_filter_wrap.py` | COCO filter wrapper，支持 pipeline |
+| `roboflow_filter_wrap.py` | Roboflow filter wrapper，支持 pipeline |
+| `batch_roboflow_gen_config.py` | 批量扫描 Roboflow 数据集目录，按关键词自动生成过滤配置文件 |
 | `batch_run_profiles.py` | 批量执行 wrapper 的所有配置段 |
-| `dedup_yolo_dataset.py` | 对 YOLO 数据集各 split 目录执行去重去相似操作，输出硬链接结果 |
+| `yolo_dedup.py` | 对 YOLO 数据集各 split 目录执行去重去相似操作，输出硬链接结果 |
 
 ---
 
-# filter_coco_category.py — COCO 类别过滤
+# coco_filter.py — COCO 类别过滤
 
 该脚本从 COCO 标注中按类别筛选图像，并将图像与对应标签拷贝到目标目录。
 
@@ -37,7 +37,7 @@
 ## 运行环境
 
 - Python 3.8+
-- `filter_coco_category.py`、`filter_yolo_roboflow.py`、`remap_yolo_labels.py` 仅依赖标准库
+- `coco_filter.py`、`roboflow_filter.py`、`yolo_remap.py` 仅依赖标准库
 - `yolo_to_labelme.py` 需要 **Pillow**（用于读取图像尺寸）：`pip install Pillow`
 - wrapper 脚本读取 TOML 时优先使用 Python 3.11+ 内置 `tomllib`；低版本请安装 `tomli`：`pip install tomli`
 
@@ -98,7 +98,7 @@
 ### 1) 单文件 + 按类别名筛选
 
 ```bash
-python3 filter_coco_category.py \
+python3 coco_filter.py \
   --category-names person \
   --json-file /path/to/train.json \
   --label-root /path/to/labels/yolo/object_model \
@@ -108,7 +108,7 @@ python3 filter_coco_category.py \
 ### 2) 单文件 + 按类别 ID 筛选
 
 ```bash
-python3 filter_coco_category.py \
+python3 coco_filter.py \
   --category-ids 1 \
   --json-file /path/to/val.json \
   --label-root /path/to/labels/yolo/object_model \
@@ -118,7 +118,7 @@ python3 filter_coco_category.py \
 ### 3) 多类别 + 不合并（每个类别单独目录）
 
 ```bash
-python3 filter_coco_category.py \
+python3 coco_filter.py \
   --category-names boom,fence \
   --json-dir /path/to/coco/jsons \
   --label-root /path/to/labels/yolo/object_model \
@@ -129,7 +129,7 @@ python3 filter_coco_category.py \
 ### 4) 多类别 + 合并输出
 
 ```bash
-python3 filter_coco_category.py \
+python3 coco_filter.py \
   --category-names boom,fence \
   --json-dir /path/to/coco/jsons \
   --label-root /path/to/labels/yolo/object_model \
@@ -140,7 +140,7 @@ python3 filter_coco_category.py \
 ### 5) 预览路径与统计（不拷贝）
 
 ```bash
-python3 filter_coco_category.py \
+python3 coco_filter.py \
   --category-names person \
   --json-dir /path/to/coco/jsons \
   --label-root /path/to/labels/yolo/object_model \
@@ -152,7 +152,7 @@ python3 filter_coco_category.py \
 ### 6) 调试模式（逐条打印映射）
 
 ```bash
-python3 filter_coco_category.py \
+python3 coco_filter.py \
   --category-names person \
   --json-file /path/to/train.json \
   --label-root /path/to/labels/yolo/object_model \
@@ -162,9 +162,9 @@ python3 filter_coco_category.py \
 
 ## Wrapper（配置驱动运行）
 
-项目提供了包装脚本：`filter_coco_category_wrap.py`。
+项目提供了包装脚本：`coco_filter_wrap.py`。
 
-目的：通过“配置文件 + 配置名”加载参数，再调用 `filter_coco_category.py`，避免把原脚本逻辑改复杂。
+目的：通过“配置文件 + 配置名”加载参数，再调用 `coco_filter.py`，避免把原脚本逻辑改复杂。
 
 ### 配置格式选择
 
@@ -186,7 +186,7 @@ python3 filter_coco_category.py \
 
 ### 配置校验规则
 
-wrapper 会先校验配置，校验不通过则**不会调用** `filter_coco_category.py`：
+wrapper 会先校验配置，校验不通过则**不会调用** `coco_filter.py`：
 
 - `category_ids` / `category_names` 必须二选一（支持逗号分隔多值）
 - `json_file` / `json_dir` 必须二选一
@@ -235,13 +235,13 @@ debug = false
 1) 使用默认配置文件：
 
 ```bash
-python3 filter_coco_category_wrap.py --config-name demo_by_name
+python3 coco_filter_wrap.py --config-name demo_by_name
 ```
 
 2) 使用指定配置文件（相对路径）：
 
 ```bash
-python3 filter_coco_category_wrap.py \
+python3 coco_filter_wrap.py \
   --config-file ./configs/filter_coco_category_profiles.toml \
   --config-name demo_by_id
 ```
@@ -249,15 +249,15 @@ python3 filter_coco_category_wrap.py \
 3) 使用指定配置文件（绝对路径）并打印最终命令：
 
 ```bash
-python3 filter_coco_category_wrap.py \
+python3 coco_filter_wrap.py \
   --config-file /abs/path/to/filter_profiles.toml \
   --config-name demo_by_name \
   --print-command
 ```
 
-# filter_yolo_roboflow.py — Roboflow YOLO 过滤脚本
+# roboflow_filter.py — Roboflow YOLO 过滤脚本
 
-新增脚本：`filter_yolo_roboflow.py`
+新增脚本：`roboflow_filter.py`
 
 用途：过滤 Roboflow 下载的 YOLO 数据集（`data.yaml`），按指定类别提取图像和标签，并输出为新的 YOLO 目录结构。
 
@@ -323,7 +323,7 @@ python3 filter_coco_category_wrap.py \
 按类别名，多类别分别输出：
 
 ```bash
-python3 filter_yolo_roboflow.py \
+python3 roboflow_filter.py \
   --data-yaml /home/ieds/datasets/helmet-det/A-ConstructionSiteSafety.v30-raw-images_latestversion.yolo26/ORIGIN/data.yaml \
   --target-names Excavator,Gloves \
   --output-root /home/ieds/Pictures/test123 \
@@ -333,7 +333,7 @@ python3 filter_yolo_roboflow.py \
 按类别名，多类别合并输出（推荐先 dry-run）：
 
 ```bash
-python3 filter_yolo_roboflow.py \
+python3 roboflow_filter.py \
   --data-yaml /home/ieds/datasets/helmet-det/A-ConstructionSiteSafety.v30-raw-images_latestversion.yolo26/ORIGIN/data.yaml \
   --target-names Excavator,Gloves \
   --output-root /home/ieds/Pictures/test123 \
@@ -344,11 +344,11 @@ python3 filter_yolo_roboflow.py \
 
 ## Roboflow Wrapper（配置驱动）
 
-新增包装脚本：`filter_yolo_roboflow_wrap.py`
+新增包装脚本：`roboflow_filter_wrap.py`
 
 - 默认配置文件：`configs/filter_yolo_roboflow_profiles.toml`
 - 调用方式：`配置文件 + 配置名`
-- 校验失败时不会调用 `filter_yolo_roboflow.py`
+- 校验失败时不会调用 `roboflow_filter.py`
 
 ### Wrapper 参数
 
@@ -376,7 +376,7 @@ debug = true
 ### Wrapper 使用示例
 
 ```bash
-python3 filter_yolo_roboflow_wrap.py --config-name demo_by_names_split
+python3 roboflow_filter_wrap.py --config-name demo_by_names_split
 ```
 
 ## 关键逻辑说明
@@ -392,7 +392,7 @@ python3 filter_yolo_roboflow_wrap.py --config-name demo_by_names_split
 
 ---
 
-# remap_yolo_labels.py — YOLO 标签序号重映射
+# yolo_remap.py — YOLO 标签序号重映射
 
 将 YOLO 标签文件中的类别 ID 替换为新的 ID（如 `11→0, 8→1`）。
 
@@ -412,7 +412,7 @@ python3 filter_yolo_roboflow_wrap.py --config-name demo_by_names_split
 ## 使用示例
 
 ```bash
-python3 remap_yolo_labels.py \
+python3 yolo_remap.py \
   --source-dir /path/to/yolo/dataset \
   --mapping "11:0,8:1" \
   --dry-run --debug
@@ -465,10 +465,10 @@ python3 yolo_to_labelme.py \
 
 # Pipeline — 一键过滤→重设序号→转 labelme
 
-两个 wrapper 脚本（`filter_coco_category_wrap.py` 和 `filter_yolo_roboflow_wrap.py`）均支持 pipeline 模式，可将三个阶段串联：
+两个 wrapper 脚本（`coco_filter_wrap.py` 和 `roboflow_filter_wrap.py`）均支持 pipeline 模式，可将三个阶段串联：
 
 ```
-filter → remap_yolo_labels → yolo_to_labelme
+filter → yolo_remap → yolo_to_labelme
 ```
 
 ## 配置格式（嵌套 TOML）
@@ -539,19 +539,19 @@ mapping = "0:cat,1:dog"
 
 ```bash
 # COCO filter + reindex + cvtlabelme
-python3 filter_coco_category_wrap.py --config-name my_pipeline
+python3 coco_filter_wrap.py --config-name my_pipeline
 
 # Roboflow filter + reindex only
-python3 filter_yolo_roboflow_wrap.py --config-name my_pipeline --print-command
+python3 roboflow_filter_wrap.py --config-name my_pipeline --print-command
 ```
 
 旧格式（仅含 filter 参数的扁平 profile）不受影响，向后兼容。
 
 ---
 
-# gen_roboflow_filter_config.py — 批量生成过滤配置文件
+# batch_roboflow_gen_config.py — 批量生成过滤配置文件
 
-扫描指定目录下所有 Roboflow 数据集子目录，读取每个数据集的 `data.yaml`，按关键词匹配类别后，自动生成可供 `filter_yolo_roboflow_wrap.py` 执行的 TOML 配置文件。
+扫描指定目录下所有 Roboflow 数据集子目录，读取每个数据集的 `data.yaml`，按关键词匹配类别后，自动生成可供 `roboflow_filter_wrap.py` 执行的 TOML 配置文件。
 
 ## 功能用途
 
@@ -577,7 +577,7 @@ python3 filter_yolo_roboflow_wrap.py --config-name my_pipeline --print-command
 
 - `--overwrite`：若目标配置文件已存在则覆盖，默认不覆盖。
 - `--case-sensitive`：匹配时区分大小写，默认不区分。
-- `--filter-output-root <DIR>`：写入生成配置中的过滤结果输出目录（即 `filter_yolo_roboflow.py` 的 `--output-root`）。与模板中 `[filter].output_root` 必须存在其一，CLI 参数优先。
+- `--filter-output-root <DIR>`：写入生成配置中的过滤结果输出目录（即 `roboflow_filter.py` 的 `--output-root`）。与模板中 `[filter].output_root` 必须存在其一，CLI 参数优先。
 - `--template <FILE>`：配置模板文件名（自动在 `configs/_template/` 下查找）或绝对/相对路径。未指定时使用内置默认值并生成完整三阶段配置。
 
 ## 配置模板
@@ -610,7 +610,7 @@ overwrite = false
 ### 1) 基础用法（使用内置默认值，生成完整三阶段配置）
 
 ```bash
-python3 gen_roboflow_filter_config.py \
+python3 batch_roboflow_gen_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config crane_filter.toml \
   --keywords "crane" \
@@ -620,7 +620,7 @@ python3 gen_roboflow_filter_config.py \
 ### 2) 多关键词匹配（OR 逻辑）
 
 ```bash
-python3 gen_roboflow_filter_config.py \
+python3 batch_roboflow_gen_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config crane_filter.toml \
   --keywords "crane,tower crane,boom" \
@@ -630,7 +630,7 @@ python3 gen_roboflow_filter_config.py \
 ### 3) 使用模板文件（output_root 在模板中配置）
 
 ```bash
-python3 gen_roboflow_filter_config.py \
+python3 batch_roboflow_gen_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config crane_filter.toml \
   --keywords "crane" \
@@ -640,7 +640,7 @@ python3 gen_roboflow_filter_config.py \
 ### 4) 覆盖已有配置文件，区分大小写匹配
 
 ```bash
-python3 gen_roboflow_filter_config.py \
+python3 batch_roboflow_gen_config.py \
   --scan-dir /path/to/roboflow_datasets \
   --output-config /abs/path/to/output.toml \
   --keywords "Crane,Tower Crane" \
@@ -677,17 +677,17 @@ mapping = "0:crane,1:tower crane"
 overwrite = false
 ```
 
-生成后可直接通过 `filter_yolo_roboflow_wrap.py` 或 `batch_run_profiles.py` 执行：
+生成后可直接通过 `roboflow_filter_wrap.py` 或 `batch_run_profiles.py` 执行：
 
 ```bash
 # 单个 profile 执行
-python3 filter_yolo_roboflow_wrap.py \
+python3 roboflow_filter_wrap.py \
   --config-file configs/crane_filter.toml \
   --config-name 20250217_v2i_yolov11
 
 # 批量执行所有 profile
 python3 batch_run_profiles.py \
-  --wrapper filter_yolo_roboflow_wrap.py \
+  --wrapper roboflow_filter_wrap.py \
   --config-file configs/crane_filter.toml
 ```
 
@@ -710,8 +710,8 @@ python3 batch_run_profiles.py \
 
 | `wrapper_type` 值 | 对应 wrapper 脚本 |
 |---|---|
-| `yolo_roboflow` | `filter_yolo_roboflow_wrap.py` |
-| `coco_category` | `filter_coco_category_wrap.py` |
+| `yolo_roboflow` | `roboflow_filter_wrap.py` |
+| `coco_category` | `coco_filter_wrap.py` |
 
 各 wrapper 脚本本身不读取 `[meta]` 节，向下兼容已有配置文件（只需在文件顶部新增两行）。
 
@@ -719,7 +719,7 @@ python3 batch_run_profiles.py \
 
 | 参数 | 是否必填 | 说明 |
 |---|---|---|
-| `--wrapper` | 必填 | wrapper 脚本文件名或路径，如 `filter_yolo_roboflow_wrap.py` |
+| `--wrapper` | 必填 | wrapper 脚本文件名或路径，如 `roboflow_filter_wrap.py` |
 | `--config-file` | 必填 | TOML 配置文件路径（绝对或相对） |
 | `--dry-run` | 可选 | 仅列出配置段，不实际执行任何命令 |
 | `--print-command` | 可选 | 透传给各 wrapper 子进程，执行前打印最终命令 |
@@ -731,7 +731,7 @@ python3 batch_run_profiles.py \
 
 ```bash
 python3 batch_run_profiles.py \
-  --wrapper filter_yolo_roboflow_wrap.py \
+  --wrapper roboflow_filter_wrap.py \
   --config-file configs/filter_yolo_roboflow_profiles.toml \
   --dry-run
 ```
@@ -740,7 +740,7 @@ python3 batch_run_profiles.py \
 
 ```bash
 python3 batch_run_profiles.py \
-  --wrapper filter_yolo_roboflow_wrap.py \
+  --wrapper roboflow_filter_wrap.py \
   --config-file configs/filter_yolo_roboflow_profiles.toml
 ```
 
@@ -748,7 +748,7 @@ python3 batch_run_profiles.py \
 
 ```bash
 python3 batch_run_profiles.py \
-  --wrapper filter_coco_category_wrap.py \
+  --wrapper coco_filter_wrap.py \
   --config-file configs/filter_coco_category_profiles.toml \
   --fail-fast
 ```
@@ -757,7 +757,7 @@ python3 batch_run_profiles.py \
 
 ```bash
 python3 batch_run_profiles.py \
-  --wrapper filter_yolo_roboflow_wrap.py \
+  --wrapper roboflow_filter_wrap.py \
   --config-file configs/filter_yolo_roboflow_profiles.toml \
   --print-command
 ```
@@ -767,14 +767,14 @@ python3 batch_run_profiles.py \
 ```bash
 # 会报错并拒绝执行
 python3 batch_run_profiles.py \
-  --wrapper filter_coco_category_wrap.py \
+  --wrapper coco_filter_wrap.py \
   --config-file configs/filter_yolo_roboflow_profiles.toml
 # → [错误] wrapper 类型不匹配！
 ```
 
 ---
 
-# dedup_yolo_dataset.py — YOLO 数据集图像去重
+# yolo_dedup.py — YOLO 数据集图像去重
 
 对 YOLO 数据集目录下各 split（train / valid / test）执行去重去相似操作，
 以**硬链接**方式输出结果，节省磁盘空间。
@@ -826,7 +826,7 @@ python3 batch_run_profiles.py \
 需使用 conda 环境 `cu12-dev`：
 
 ```bash
-/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+/home/ieds/.conda/envs/cu12-dev/bin/python yolo_dedup.py \
   --scan-dir /path/to/dataset \
   --output-root /path/to/dedup_out
 ```
@@ -835,12 +835,12 @@ python3 batch_run_profiles.py \
 
 ```bash
 # 处理数据集下所有 split，使用默认阈值，带时间戳后缀
-/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+/home/ieds/.conda/envs/cu12-dev/bin/python yolo_dedup.py \
   --scan-dir /home/data/crane_dataset \
   --output-root /home/data/crane_dedup_out
 
 # 调高相似度阈值（更严格，减少误判）
-/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+/home/ieds/.conda/envs/cu12-dev/bin/python yolo_dedup.py \
   --scan-dir /home/data/crane_dataset \
   --output-root /home/data/crane_dedup_out \
   --threshold 0.92 \
@@ -848,7 +848,7 @@ python3 batch_run_profiles.py \
   --ssim-threshold 0.90
 
 # CPU 运行 + 不带时间戳（覆盖模式）
-/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+/home/ieds/.conda/envs/cu12-dev/bin/python yolo_dedup.py \
   --scan-dir /home/data/crane_dataset \
   --output-root /home/data/crane_dedup_out \
   --device cpu \
@@ -858,7 +858,7 @@ python3 batch_run_profiles.py \
 ## Pipeline 集成
 
 `dedup` 可作为 `filter → dedup → reindex → cvtlabelme` 管道中的第二阶段，
-集成到 `filter_yolo_roboflow_wrap.py` 或 `filter_coco_category_wrap.py`。
+集成到 `roboflow_filter_wrap.py` 或 `coco_filter_wrap.py`。
 
 ### Pipeline 工作原理
 

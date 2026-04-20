@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-批量执行 wrapper 脚本（filter_yolo_roboflow_wrap.py 或 filter_coco_category_wrap.py）
+批量执行 wrapper 脚本（roboflow_filter_wrap.py 或 coco_filter_wrap.py）
 对 TOML 配置文件中所有有效配置段逐一运行。
 
 使用方式：
-  python3 batch_run_profiles.py --wrapper filter_yolo_roboflow_wrap.py \\
+  python3 batch_run_profiles.py --wrapper roboflow_filter_wrap.py \\
       --config-file configs/filter_yolo_roboflow_profiles.toml
 
 可选参数：
@@ -21,8 +21,8 @@ from typing import Any, Dict, List, Optional, Tuple
 
 # wrapper 文件名与 [meta].wrapper_type 值的对应关系
 WRAPPER_TYPE_TO_SCRIPT: Dict[str, str] = {
-    "yolo_roboflow": "filter_yolo_roboflow_wrap.py",
-    "coco_category": "filter_coco_category_wrap.py",
+    "yolo_roboflow": "roboflow_filter_wrap.py",
+    "coco_category": "coco_filter_wrap.py",
 }
 
 
@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
         "--wrapper",
         required=True,
         metavar="SCRIPT",
-        help="wrapper 脚本的文件名或路径，例如 filter_yolo_roboflow_wrap.py",
+        help="wrapper 脚本的文件名或路径，例如 roboflow_filter_wrap.py",
     )
     parser.add_argument(
         "--config-file",
