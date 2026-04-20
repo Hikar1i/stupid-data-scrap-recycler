@@ -35,7 +35,7 @@ FILTER_ALLOWED_KEYS = {
     "merge",
 }
 # 嵌套 pipeline profile 的检测键：任意子表存在即识别为 pipeline 模式
-PIPELINE_STAGE_KEYS = {"filter", "reindex", "cvtlabelme"}
+PIPELINE_STAGE_KEYS = {"filter", "reindex", "cvtlabelme", "dedup"}
 
 
 def parse_args() -> argparse.Namespace:
@@ -276,14 +276,16 @@ def main() -> int:
         filter_cfg = raw_profile.get("filter")  # 无 filter 子表时为 None
         reindex_cfg = raw_profile.get("reindex")  # 缺失时为 None
         cvtlabelme_cfg = raw_profile.get("cvtlabelme")  # 缺失时为 None
+        dedup_cfg = raw_profile.get("dedup")  # 缺失时为 None
     else:
         # 展平格式（将整个 profile 作为 filter 配置）
         filter_cfg = raw_profile
         reindex_cfg = None
         cvtlabelme_cfg = None
+        dedup_cfg = None
 
     has_filter = filter_cfg is not None
-    has_pipeline = reindex_cfg is not None or cvtlabelme_cfg is not None
+    has_pipeline = reindex_cfg is not None or cvtlabelme_cfg is not None or dedup_cfg is not None
 
     if has_filter:
         validated, errors = validate_profile(filter_cfg, args.config_name)
@@ -343,6 +345,7 @@ def main() -> int:
         reindex_cfg=reindex_cfg,
         cvtlabelme_cfg=cvtlabelme_cfg,
         print_command=args.print_command,
+        dedup_cfg=dedup_cfg,
     )
     return 0
 
