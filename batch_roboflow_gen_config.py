@@ -1,15 +1,15 @@
 #!/usr/bin/env python3
 """
-批量扫描 Roboflow 数据集目录，生成 filter_yolo_roboflow_wrap.py 所需的 TOML 配置文件。
+批量扫描 Roboflow 数据集目录，生成 roboflow_filter_wrap.py 所需的 TOML 配置文件。
 
 用法示例：
-    python3 gen_roboflow_filter_config.py \\
+    python3 batch_roboflow_gen_config.py \\
         --scan-dir /path/to/datasets \\
         --output-config my_filter.toml \\
         --keywords "crane" \\
         --filter-output-root /path/to/output
 
-    python3 gen_roboflow_filter_config.py \\
+    python3 batch_roboflow_gen_config.py \\
         --scan-dir /path/to/datasets \\
         --output-config /abs/path/to/my_filter.toml \\
         --keywords "crane,boom" \\
@@ -49,7 +49,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description=(
             "扫描 Roboflow 数据集目录，按关键词匹配类别，"
-            "批量生成 filter_yolo_roboflow_wrap.py 的 TOML 配置文件。"
+            "批量生成 roboflow_filter_wrap.py 的 TOML 配置文件。"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -94,7 +94,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         metavar="DIR",
         help=(
-            "写入生成配置中的过滤结果输出目录（即 filter_yolo_roboflow.py 的 --output-root）。"
+            "写入生成配置中的过滤结果输出目录（即 roboflow_filter.py 的 --output-root）。"
             "也可在模板文件的 [filter] 节配置 output_root 字段（CLI 参数优先）。"
             "两者必须存在其一，否则报错退出。"
         ),
@@ -114,7 +114,7 @@ def parse_args() -> argparse.Namespace:
         default=None,
         metavar="DIR",
         help=(
-            "写入生成配置中的去重结果输出目录（即 dedup_yolo_dataset.py 的 --output-root）。"
+            "写入生成配置中的去重结果输出目录（即 yolo_dedup.py 的 --output-root）。"
             "也可在模板文件的 [dedup] 节配置 output_root 字段（CLI 参数优先）。"
             "不指定时，生成的配置省略 output_root 项，"
             "pipeline 运行时自动使用 filter 输出目录（推荐）。"

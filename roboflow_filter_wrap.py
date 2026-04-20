@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-filter_yolo_roboflow.py 的配置驱动 wrapper，可选支持流水线阶段。
+roboflow_filter.py 的配置驱动 wrapper，可选支持流水线阶段。
 
 嵌套 TOML 格式（pipeline 模式）：
     [profiles.<名称>.filter]      # 必选，过滤阶段
-    [profiles.<名称>.reindex]     # 可选，过滤后运行 remap_yolo_labels.py
+    [profiles.<名称>.reindex]     # 可选，过滤后运行 yolo_remap.py
     [profiles.<名称>.cvtlabelme]  # 可选，reindex/filter 后运行 yolo_to_labelme.py
 
 展平格式（仅过滤）仍向下兼容：
@@ -20,7 +20,7 @@ from typing import Any, Dict, List, Optional, Tuple
 
 
 DEFAULT_CONFIG_RELATIVE_PATH = Path("configs/filter_yolo_roboflow_profiles.toml")
-TARGET_SCRIPT_NAME = "filter_yolo_roboflow.py"
+TARGET_SCRIPT_NAME = "roboflow_filter.py"
 
 FILTER_ALLOWED_KEYS = {
     "data_yaml",
@@ -41,7 +41,7 @@ FILTER_ALLOWED_KEYS = {
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
-        description="从 TOML 加载命名配置并驱动 filter_yolo_roboflow.py 执行。"
+        description="从 TOML 加载命名配置并驱动 roboflow_filter.py 执行。"
     )
     parser.add_argument("--config-name", required=True, help="配置文件中的 profile 名称")
     parser.add_argument(
@@ -312,12 +312,12 @@ def main() -> int:
         return result.returncode
 
     # ── 执行管道 ─────────────────────────────────────────────────────────
-    from pipeline_utils import run_stage, run_pipeline_stages  # type: ignore
+    from _pipeline_utils import run_stage, run_pipeline_stages  # type: ignore
 
     filter_output_dirs: List[Path] = []
     if has_filter:
         print("=" * 90)
-        print("Pipeline 阶段：filter（filter_yolo_roboflow）")
+        print("Pipeline 阶段：filter（roboflow_filter）")
         print("=" * 90)
         filter_output_dirs = run_stage(command, "filter", args.print_command)
         if not filter_output_dirs:
