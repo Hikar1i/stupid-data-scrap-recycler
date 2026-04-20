@@ -1,6 +1,6 @@
 """流水线 wrapper 脚本共享工具模块。
 
-管道阶段：filter → reindex → cvtlabelme
+管道阶段：filter → dedup → reindex → cvtlabelme
 每个阶段从上一阶段的 stdout 中解析 OUTPUT_DIR:<路径> 行，
 作为下一阶段的源目录传入。
 """
@@ -11,6 +11,55 @@ from typing import List, Optional
 
 
 OUTPUT_DIR_PREFIX = "OUTPUT_DIR:"
+
+
+def build_dedup_command(
+    script_path: Path,
+    scan_dir: Path,
+    dedup_cfg: dict,
+    print_output_dir: bool,
+) -> List[str]:
+    """构建 dedup_yolo_dataset.py 命令。
+
+    dedup_cfg 支持的键：
+      python          (可选) 专用 Python 解释器路径，默认用 sys.executable
+      output_root     (可选) 去重结果输出根目录；未配置时使用 scan_dir（推荐）
+      threshold       (可选) ResNet50 相似度阈值
+      dhash_threshold (可选) dHash 相似度阈值
+      ssim_threshold  (可选) SSIM 阈值
+      batch_size      (可选) 特征提取 batch 大小
+      device          (可选) 计算设备 cuda/cpu
+      timestamp_suffix(可选) 输出目录名是否带时间戳后缀
+    """
+    # output_root 未配置时默认等于 scan_dir（dedup 结果写入 filter 输出目录内）
+    output_root = dedup_cfg.get("output_root") or str(scan_dir)
+
+    python_bin = dedup_cfg.get("python") or sys.executable
+    cmd: List[str] = [
+        python_bin, str(script_path),
+        "--scan-dir", str(scan_dir),
+        "--output-root", str(output_root),
+    ]
+
+    for key, arg in [
+        ("threshold", "--threshold"),
+        ("dhash_threshold", "--dhash-threshold"),
+        ("ssim_threshold", "--ssim-threshold"),
+        ("batch_size", "--batch-size"),
+        ("device", "--device"),
+    ]:
+        val = dedup_cfg.get(key)
+        if val is not None:
+            cmd.extend([arg, str(val)])
+
+    ts = dedup_cfg.get("timestamp_suffix")
+    if ts is not None:
+        cmd.extend(["--timestamp-suffix", str(ts).lower()])
+
+    if print_output_dir:
+        cmd.append("--print-output-dir")
+
+    return cmd
 
 
 def run_stage(cmd: List[str], stage_name: str, print_command: bool) -> List[Path]:
@@ -127,19 +176,21 @@ def run_pipeline_stages(
     reindex_cfg: Optional[dict],
     cvtlabelme_cfg: Optional[dict],
     print_command: bool,
+    dedup_cfg: Optional[dict] = None,
 ) -> None:
-    """在 filter 阶段完成后，依次调度 reindex 和或 cvtlabelme 阶段。
+    """在 filter 阶段完成后，依次调度 dedup、reindex 和或 cvtlabelme 阶段。
 
-    filter_output_dirs：filter 阶段产生的输出目录列表。
+    filter_output_dirs：filter 阶段产生的输出目录列表（通常为含各 split 的 merge 根目录）。
     """
+    has_dedup = dedup_cfg is not None
     has_reindex = reindex_cfg is not None
     has_cvtlabelme = cvtlabelme_cfg is not None
 
-    if not has_reindex and not has_cvtlabelme:
+    if not has_dedup and not has_reindex and not has_cvtlabelme:
         return
 
-    # 仅配置 cvtlabelme 而无 reindex 时的警告
-    if has_cvtlabelme and not has_reindex:
+    # 仅配置 cvtlabelme 而无 reindex 且无 dedup 时的警告
+    if has_cvtlabelme and not has_reindex and not has_dedup:
         print("!" * 90)
         print(
             "警告：cvtlabelme 阶段已配置，但缺少 reindex 阶段。\n"
@@ -151,10 +202,41 @@ def run_pipeline_stages(
 
     reindex_script = script_root / "remap_yolo_labels.py"
     cvtlabelme_script = script_root / "yolo_to_labelme.py"
+    dedup_script = script_root / "dedup_yolo_dataset.py"
 
     current_sources = list(filter_output_dirs)
 
-    # ── reindex 阶段 ─────────────────────────────────────────────────────────
+    # ── dedup 阶段 ──────────────────────────────────────────────────────────────────────────
+    if has_dedup:
+        print("=" * 90)
+        print("Pipeline 阶段：dedup（图像去重去相似）")
+        print("=" * 90)
+        # filter 输出为 merge 根目录，直接作为 scan_dir
+        if len(current_sources) != 1:
+            print(
+                f"[pipeline] 警告：filter 阶段输出了 {len(current_sources)} 个目录，"
+                "dedup 阶段期望仅有 1 个 merge 根目录，取第一个目录继续。",
+                file=sys.stderr,
+            )
+        scan_dir = current_sources[0]
+        has_subsequent = has_reindex or has_cvtlabelme
+        dedup_cmd = build_dedup_command(
+            dedup_script,
+            scan_dir,
+            dedup_cfg,
+            print_output_dir=has_subsequent,
+        )
+        dedup_output_dirs = run_stage(dedup_cmd, "dedup", print_command)
+        if has_subsequent:
+            if not dedup_output_dirs:
+                print(
+                    "[pipeline] 警告：dedup 阶段未输出任何 OUTPUT_DIR 行，管道无法继续。",
+                    file=sys.stderr,
+                )
+                sys.exit(1)
+            current_sources = dedup_output_dirs
+
+    # ── reindex 阶段 ──────────────────────────────────────────────────────────────────────────
     if has_reindex:
         print("=" * 90)
         print("Pipeline 阶段：reindex（标签序号重映射）")
@@ -171,12 +253,11 @@ def run_pipeline_stages(
             reindex_sources_after.extend(out_dirs)
 
         # 如果 cvtlabelme 后续且捕获到输出目录，就用新目录；
-        # 否则回退到 filter 输出目录（inplace 情况）。
+        # 否则回退到当前源目录（inplace 情况）。
         if reindex_sources_after:
             current_sources = reindex_sources_after
-        # inplace=true 时 reindex 已在 filter 输出目录内原地修改，current_sources 保持不变。
 
-    # ── cvtlabelme 阶段 ───────────────────────────────────────────────────────
+    # ── cvtlabelme 阶段 ────────────────────────────────────────────────────────────────────────
     if has_cvtlabelme:
         print("=" * 90)
         print("Pipeline 阶段：cvtlabelme（转换 labelme JSON）")

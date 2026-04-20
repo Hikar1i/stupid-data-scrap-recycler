@@ -146,21 +146,43 @@ def parse_mapping_from_classes_file(path: Path) -> Dict[int, str]:
 IMAGE_SUFFIXES = {".jpg", ".jpeg", ".png", ".bmp", ".webp", ".tiff", ".tif"}
 
 
+def _find_images_sibling(parent: Path, exclude: Path) -> Optional[Path]:
+    """在 parent 目录下查找 images 同级目录。
+
+    优先匹配恰好命名为 "images" 的子目录；若不存在，则退而匹配任意以
+    "images" 开头的子目录（如 images_deduped_260420/），以兼容 dedup 阶段
+    使用独立 output_root 时的输出结构。exclude 为不参与匹配的目录（通常为
+    labels 目录自身，避免误匹配）。
+    """
+    exact = parent / "images"
+    if exact.is_dir():
+        return exact
+    for candidate in sorted(parent.iterdir()):
+        if (
+            candidate.is_dir()
+            and candidate.name.startswith("images")
+            and candidate != exclude
+        ):
+            return candidate
+    return None
+
+
 def find_split_pairs(source_dir: Path) -> List[Tuple[Path, Path]]:
     """
     在 source_dir 下找到所有 (images_dir, labels_dir) 配对。
     有效配对要求 images/ 和 labels/ 均存在且互为兄弟目录。
 
     额外支持 source_dir 本身即为 labels 目录的情形（例如 pipeline reindex
-    阶段输出的 labels_remapping_<ts>/ 目录）：若其父目录下存在同级 images/
-    目录，则直接将该对作为唯一配对返回。
+    阶段输出的 labels_remapping_<ts>/ 目录，或 dedup 输出的
+    labels_deduped_<ts>/ 目录）：若其父目录下存在同级 images* 目录，
+    则直接将该对作为唯一配对返回。
     """
     pairs: List[Tuple[Path, Path]] = []
     seen_images: set = set()
 
-    # 检测 source_dir 自身是否为 labels 目录（父目录下有同级 images/）
-    images_sibling = source_dir.parent / "images"
-    if images_sibling.is_dir():
+    # 检测 source_dir 自身是否为 labels 目录（父目录下有同级 images* 目录）
+    images_sibling = _find_images_sibling(source_dir.parent, source_dir)
+    if images_sibling is not None:
         seen_images.add(images_sibling)
         pairs.append((images_sibling, source_dir))
 
@@ -374,12 +396,13 @@ def resolve_dataset_root(source_dir: Path) -> Path:
     """
     从 source_dir 推断数据集根目录。
 
-    - 若 source_dir 本身是 labels 目录（同层存在 images/ 兄弟目录），
-      则根目录为其祖父目录（即 split_dir 的父级，如 merge_timestamp/）。
+    - 若 source_dir 本身是 labels 目录（同层存在 images* 兄弟目录，
+      包括 images_deduped_xxx/ 等 dedup 输出结构），则根目录为其祖父目录
+      （即 split_dir 的父级，如 merge_timestamp/）。
     - 否则 source_dir 自身即为数据集根目录。
     """
-    images_sibling = source_dir.parent / "images"
-    if images_sibling.is_dir():
+    images_sibling = _find_images_sibling(source_dir.parent, source_dir)
+    if images_sibling is not None:
         return source_dir.parent.parent
     return source_dir
 

@@ -12,6 +12,7 @@
 | `filter_yolo_roboflow_wrap.py` | Roboflow filter wrapper，支持 pipeline |
 | `gen_roboflow_filter_config.py` | 批量扫描 Roboflow 数据集目录，按关键词自动生成过滤配置文件 |
 | `batch_run_profiles.py` | 批量执行 wrapper 的所有配置段 |
+| `dedup_yolo_dataset.py` | 对 YOLO 数据集各 split 目录执行去重去相似操作，输出硬链接结果 |
 
 ---
 
@@ -770,4 +771,156 @@ python3 batch_run_profiles.py \
   --config-file configs/filter_yolo_roboflow_profiles.toml
 # → [错误] wrapper 类型不匹配！
 ```
+
+---
+
+# dedup_yolo_dataset.py — YOLO 数据集图像去重
+
+对 YOLO 数据集目录下各 split（train / valid / test）执行去重去相似操作，
+以**硬链接**方式输出结果，节省磁盘空间。
+
+## 去重策略
+
+依次执行四重检测（任意一级命中则判定为重复）：
+1. **MD5 精确匹配**：字节级完全相同
+2. **ResNet50 深度特征余弦相似度**：粗筛视觉相似
+3. **dHash 感知哈希相似度**：中筛感知相似
+4. **SSIM 结构相似度**：精筛结构相似
+
+仅当图像通过三个相似度阈值（ResNet50 + dHash + SSIM）才判定为相似重复。
+
+## 输出结构
+
+```
+<output-root>/
+  <相对路径与 scan-dir 保持一致>/
+    images_deduped[_时间戳]/   # 去重保留的图像 + labelme JSON 标注
+    labels_deduped[_时间戳]/   # 去重保留的 YOLO txt 标注
+    duplicates[_时间戳]/
+      group_000001/            # 重复组（代表图 + 所有重复图）
+      group_000002/
+      ...
+    duplicate_report[_时间戳].csv
+```
+
+- 每个重复组的**代表图**（第一张，按路径排序）同时存在于 `images_deduped/` 和对应 `group_XXXXXX/` 中
+- 所有输出文件均为原始文件的**硬链接**（要求源与目标在同一文件系统；跨设备时自动降级为文件复制并打印警告）
+- `images_deduped/` 同时包含图像和 labelme `.json` 标注；`labels_deduped/` 包含 YOLO `.txt` 标注
+- `group_XXXXXX/` 中同样包含图像、`.json` 和 `.txt` 文件
+
+## 参数
+
+| 参数 | 必填 | 默认值 | 说明 |
+|---|---|---|---|
+| `--scan-dir` | ✅ | — | 扫描根目录，递归查找所有含 `images/` 子目录的 split 目录 |
+| `--output-root` | ✅ | — | 输出根目录，保留原目录层级 |
+| `--threshold` | | `0.85` | ResNet50 深度特征余弦相似度阈值 |
+| `--dhash-threshold` | | `0.90` | dHash 感知哈希相似度阈值 |
+| `--ssim-threshold` | | `0.85` | SSIM 结构相似度阈值 |
+| `--batch-size` | | `32` | 特征提取 batch 大小 |
+| `--device` | | 自动检测 | 计算设备：`cuda` / `cpu` |
+| `--timestamp-suffix` | | `true` | 输出目录名是否带时间戳后缀；`false` 时多次运行将覆盖上次结果 |
+
+## 运行环境
+
+需使用 conda 环境 `cu12-dev`：
+
+```bash
+/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+  --scan-dir /path/to/dataset \
+  --output-root /path/to/dedup_out
+```
+
+## 使用示例
+
+```bash
+# 处理数据集下所有 split，使用默认阈值，带时间戳后缀
+/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+  --scan-dir /home/data/crane_dataset \
+  --output-root /home/data/crane_dedup_out
+
+# 调高相似度阈值（更严格，减少误判）
+/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+  --scan-dir /home/data/crane_dataset \
+  --output-root /home/data/crane_dedup_out \
+  --threshold 0.92 \
+  --dhash-threshold 0.95 \
+  --ssim-threshold 0.90
+
+# CPU 运行 + 不带时间戳（覆盖模式）
+/home/ieds/.conda/envs/cu12-dev/bin/python dedup_yolo_dataset.py \
+  --scan-dir /home/data/crane_dataset \
+  --output-root /home/data/crane_dedup_out \
+  --device cpu \
+  --timestamp-suffix false
+```
+
+## Pipeline 集成
+
+`dedup` 可作为 `filter → dedup → reindex → cvtlabelme` 管道中的第二阶段，
+集成到 `filter_yolo_roboflow_wrap.py` 或 `filter_coco_category_wrap.py`。
+
+### Pipeline 工作原理
+
+1. `filter` 输出 merge 根目录（如 `crane_v1i_merge_260420/`，含 `train/images/`、`train/labels/` 等）
+2. `dedup` 以该具体目录为 `--scan-dir`，将 `images_deduped_xxx/`、`labels_deduped_xxx/`、`duplicates_xxx/` 直接写入各 split 子目录内（与 `images/`、`labels/` 同级）。未配置 `output_root` 时默认如此（**推荐**）。
+3. dedup 逐 split 输出 `OUTPUT_DIR:<labels_deduped_xxx/>`，pipeline 将其作为下一阶段的源目录列表
+4. `reindex` 对每个 `labels_deduped_xxx/` 执行映射，输出 `labels_remapping_xxx/`（与其同级）
+5. `cvtlabelme` 对每个 `labels_remapping_xxx/` 生成 labelme JSON，自动在同级查找 `images/` 或 `images_deduped_xxx/` 作为图像源
+
+### 输出目录结构（推荐，in-place 模式）
+
+```
+crane_v1i_merge_260420/          ← filter 输出目录
+├── train/
+│   ├── images/                  ← filter 原始图像
+│   ├── labels/                  ← filter 原始标签
+│   ├── images_deduped_260420/   ← dedup 输出：去重后图像
+│   ├── labels_deduped_260420/   ← dedup 输出：去重后标签
+│   ├── duplicates_260420/       ← dedup 输出：重复图像存档
+│   └── labels_remapping_260420/ ← reindex 输出：重映射后标签
+└── valid/
+    └── ...
+```
+
+### Pipeline TOML 配置示例
+
+```toml
+[profiles.crane_full_pipeline.filter]
+data_yaml    = "/home/data/crane_raw/data.yaml"
+target_names = "crane,tower_crane"
+output_root  = "/home/data/crane_filtered"
+merge        = true
+
+[profiles.crane_full_pipeline.dedup]
+python           = "/home/ieds/.conda/envs/cu12-dev/bin/python"
+# output_root 省略，pipeline 自动使用 filter 的具体输出目录（推荐）
+threshold        = 0.85
+dhash_threshold  = 0.90
+ssim_threshold   = 0.85
+batch_size       = 32
+device           = "cuda"
+timestamp_suffix = "true"
+
+[profiles.crane_full_pipeline.reindex]
+mapping = "0:0,1:1"
+inplace = true
+
+[profiles.crane_full_pipeline.cvtlabelme]
+mapping   = "0:crane,1:tower_crane"
+overwrite = false
+```
+
+### Dedup 专属 Pipeline 配置项
+
+| 配置项 | 必填 | 默认值 | 说明 |
+|---|---|---|---|
+| `python` | | `sys.executable` | 专用 Python 解释器（建议填 cu12-dev 路径） |
+| `output_root` | | filter 具体输出目录 | 去重结果输出根目录；**省略时直接输出到 filter 结果目录内（推荐）**；需要分离存放时才单独指定 |
+| `threshold` | | `0.85` | ResNet50 相似度阈值 |
+| `dhash_threshold` | | `0.90` | dHash 相似度阈值 |
+| `ssim_threshold` | | `0.85` | SSIM 相似度阈值 |
+| `batch_size` | | `32` | 特征提取 batch 大小 |
+| `device` | | 自动检测 | `cuda` / `cpu` |
+| `timestamp_suffix` | | `true` | 输出目录是否带时间戳 |
 

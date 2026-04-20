@@ -104,9 +104,16 @@ def parse_label_class_id(line: str) -> Optional[int]:
 # ---------------------------------------------------------------------------
 
 def find_labels_dirs(source_dir: Path) -> List[Path]:
-    """递归查找 source_dir 下的所有 labels 子目录。"""
+    """递归查找 source_dir 下的所有 labels 子目录。
+
+    若 rglob("labels") 未找到任何结果，则检查 source_dir 自身是否包含 .txt
+    文件——若是，则将其视为 labels 目录直接返回。此回退逻辑支持 pipeline 将
+    labels_deduped_xxx/ 等非标准命名的标注目录直接作为 --source-dir 传入。
+    """
     found = sorted([p for p in source_dir.rglob("labels") if p.is_dir()])
     if not found:
+        if any(source_dir.glob("*.txt")):
+            return [source_dir]
         raise FileNotFoundError(f"在 {source_dir} 下未找到任何 labels 目录")
     return found
 

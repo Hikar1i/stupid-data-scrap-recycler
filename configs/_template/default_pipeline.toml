@@ -20,6 +20,15 @@ merge = true
 dry_run = false
 debug = false
 
+[dedup]
+python           = "/home/ieds/.conda/envs/cu12-dev/bin/python"
+threshold        = 0.85
+dhash_threshold  = 0.90
+ssim_threshold   = 0.85
+batch_size       = 32
+device           = "cuda"
+timestamp_suffix = "true"
+
 [reindex]
 inplace = true
 

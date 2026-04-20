@@ -106,7 +106,18 @@ def parse_args() -> argparse.Namespace:
         help=(
             "配置模板文件名（自动在 configs/_template/ 下查找）或绝对/相对路径。"
             "未指定时使用内置默认值并生成完整三阶段（filter+reindex+cvtlabelme）配置。"
-            "模板中存在 [reindex] / [cvtlabelme] 节才生成对应阶段。"
+            "模板中存在 [reindex] / [cvtlabelme] / [dedup] 节才生成对应阶段。"
+        ),
+    )
+    parser.add_argument(
+        "--dedup-output-root",
+        default=None,
+        metavar="DIR",
+        help=(
+            "写入生成配置中的去重结果输出目录（即 dedup_yolo_dataset.py 的 --output-root）。"
+            "也可在模板文件的 [dedup] 节配置 output_root 字段（CLI 参数优先）。"
+            "不指定时，生成的配置省略 output_root 项，"
+            "pipeline 运行时自动使用 filter 输出目录（推荐）。"
         ),
     )
     return parser.parse_args()
@@ -332,6 +343,36 @@ def _build_cvtlabelme_block(
     ]
 
 
+def _build_dedup_block(
+    profile_name: str,
+    output_root: Optional[str],
+    cfg: Dict[str, Any],
+) -> List[str]:
+    """生成 [profiles.<name>.dedup] TOML 节的行列表。所有选项均从 cfg 读取，不强制填充默认値（保留模板原始设置）。未指定 output_root 时省略该行（pipeline 运行时自动用 scan_dir）。"""
+    lines = [f"[profiles.{profile_name}.dedup]"]
+
+    if "python" in cfg:
+        lines.append(f"python = {_toml_str(str(cfg['python']))}")
+
+    if output_root:
+        lines.append(f"output_root = {_toml_str(output_root)}")
+
+    for key in ["threshold", "dhash_threshold", "ssim_threshold"]:
+        if key in cfg:
+            lines.append(f"{key} = {cfg[key]}")
+
+    if "batch_size" in cfg:
+        lines.append(f"batch_size = {int(cfg['batch_size'])}")
+
+    if "device" in cfg:
+        lines.append(f"device = {_toml_str(str(cfg['device']))}")
+
+    if "timestamp_suffix" in cfg:
+        lines.append(f"timestamp_suffix = {_toml_str(str(cfg['timestamp_suffix']).lower())}")
+
+    return lines
+
+
 def build_profile_block(
     profile_name: str,
     data_yaml: Path,
@@ -340,12 +381,18 @@ def build_profile_block(
     filter_cfg: Dict[str, Any],
     reindex_cfg: Optional[Dict[str, Any]],
     cvtlabelme_cfg: Optional[Dict[str, Any]],
+    dedup_cfg: Optional[Dict[str, Any]] = None,
+    dedup_output_root: Optional[str] = None,
 ) -> str:
     """生成单个 profile 的完整 TOML 配置字符串（含阶段间空行）。"""
     lines: List[str] = []
 
     lines += _build_filter_block(profile_name, data_yaml, triples, output_root, filter_cfg)
     lines.append("")
+
+    if dedup_cfg is not None:
+        lines += _build_dedup_block(profile_name, dedup_output_root, dedup_cfg)
+        lines.append("")
 
     if reindex_cfg is not None:
         lines += _build_reindex_block(profile_name, triples, reindex_cfg)
@@ -400,9 +447,9 @@ def main() -> int:
     if template_output_root is not None and not str(template_output_root).strip():
         template_output_root = None  # 空字符串视为未配置
 
-    # reindex / cvtlabelme 阶段：
+    # reindex / cvtlabelme / dedup 阶段：
     #   有模板时：模板中存在对应节才启用，缺失则该阶段不生成
-    #   无模板时：默认启用全三阶段
+    #   无模板时：默认启用 filter+reindex+cvtlabelme 三阶段（dedup 计算量大不默认启用）
     if template_provided:
         reindex_cfg: Optional[Dict[str, Any]] = (
             {**_DEFAULT_REINDEX, **(template_raw.get("reindex") or {})}
@@ -414,9 +461,23 @@ def main() -> int:
             if "cvtlabelme" in template_raw
             else None
         )
+        dedup_cfg: Optional[Dict[str, Any]] = (
+            dict(template_raw.get("dedup") or {})
+            if "dedup" in template_raw
+            else None
+        )
     else:
         reindex_cfg = dict(_DEFAULT_REINDEX)
         cvtlabelme_cfg = dict(_DEFAULT_CVTLABELME)
+        dedup_cfg = None
+
+    # dedup.output_root：CLI 优先 > 模板 [dedup].output_root
+    template_dedup_output_root: Optional[str] = None
+    if dedup_cfg is not None:
+        _raw = dedup_cfg.pop("output_root", None)
+        if _raw and str(_raw).strip():
+            template_dedup_output_root = str(_raw)
+    dedup_output_root: Optional[str] = args.dedup_output_root or template_dedup_output_root
 
     # ── 确定 output_root（CLI 优先 > 模板 > 报错）─────────────────────────────
     output_root: Optional[str] = args.filter_output_root or template_output_root
@@ -488,6 +549,8 @@ def main() -> int:
             filter_cfg=filter_cfg,
             reindex_cfg=reindex_cfg,
             cvtlabelme_cfg=cvtlabelme_cfg,
+            dedup_cfg=dedup_cfg,
+            dedup_output_root=dedup_output_root,
         )
         profile_blocks.append(block)
 
