@@ -1,5 +1,5 @@
-# filter_yolo_roboflow_wrap.py 配置生成模板
-# 由 gen_roboflow_filter_config.py 通过 --template 参数加载使用
+# roboflow_filter_wrap.py 配置生成模板
+# 由 batch_roboflow_gen_config.py 通过 --template 参数加载使用
 #
 # ── 动态字段（由脚本自动生成，此处无需配置） ──────────────────────────────────────────
 #   [filter]     : data_yaml, target_names
