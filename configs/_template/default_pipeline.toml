@@ -20,6 +20,17 @@ merge = true
 dry_run = false
 debug = false
 
+[rotated]
+# 旋转黑边图像筛除结果输出根目录（可选）
+# 留空或删除该键时，默认写入 filter 具体输出目录（推荐）
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [dedup]
 python           = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold        = 0.85

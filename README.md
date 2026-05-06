@@ -12,6 +12,7 @@
 | `roboflow_filter_wrap.py` | Roboflow filter wrapper，支持 pipeline |
 | `batch_roboflow_gen_config.py` | 批量扫描 Roboflow 数据集目录，按关键词自动生成过滤配置文件 |
 | `batch_run_profiles.py` | 批量执行 wrapper 的所有配置段 |
+| `yolo_rotated_filter.py` | 检测旋转增强导致黑边明显的图像，并将其移出到 `images_rotated*`/`labels_rotated*` |
 | `yolo_dedup.py` | 对 YOLO 数据集各 split 目录执行去重去相似操作，输出硬链接结果 |
 
 ---
@@ -465,15 +466,15 @@ python3 yolo_to_labelme.py \
 
 # Pipeline — 一键过滤→重设序号→转 labelme
 
-两个 wrapper 脚本（`coco_filter_wrap.py` 和 `roboflow_filter_wrap.py`）均支持 pipeline 模式，可将三个阶段串联：
+两个 wrapper 脚本（`coco_filter_wrap.py` 和 `roboflow_filter_wrap.py`）均支持 pipeline 模式，可将多个阶段串联：
 
 ```
-filter → yolo_remap → yolo_to_labelme
+filter → yolo_rotated_filter → yolo_dedup → yolo_remap → yolo_to_labelme
 ```
 
 ## 配置格式（嵌套 TOML）
 
-通过在 profile 中添加 `[profiles.<name>.reindex]` 和/或 `[profiles.<name>.cvtlabelme]` 子节来开启对应阶段。**子节存在即开启，缺失即跳过**。
+通过在 profile 中添加 `[profiles.<name>.rotated]`、`[profiles.<name>.dedup]`、`[profiles.<name>.reindex]` 和/或 `[profiles.<name>.cvtlabelme]` 子节来开启对应阶段。**子节存在即开启，缺失即跳过**。
 
 ```toml
 [profiles.my_pipeline.filter]
@@ -482,6 +483,11 @@ json_dir = "/path/to/coco/jsons"
 label_root = "/path/to/labels/yolo"
 output_root = "/path/to/output"
 merge = "true"
+
+[profiles.my_pipeline.rotated]
+output_root = "/path/to/rotated_out"
+edge_width_percent = 25
+black_area_percent = 30
 
 [profiles.my_pipeline.reindex]
 mapping = "11:0,8:1"
@@ -519,7 +525,8 @@ overwrite = false
 ## Pipeline 阶段链接原理
 
 - filter 脚本在 pipeline 模式下会打印 `OUTPUT_DIR:<path>` 行（通过 `--print-output-dir` 标志触发）。
-- wrapper 解析这些路径后，将其作为 reindex 的 `--source-dir` 输入。
+- 若存在 rotated 阶段，会先在 filter 输出目录中剔除旋转黑边图像，并将被剔除文件移至 `output_root`（保留层级，目录名为 `images_rotated*` / `labels_rotated*`）；未配置 `output_root` 时默认写入 filter 具体输出目录。
+- wrapper 解析这些路径后，将其作为 dedup / reindex 的 `--source-dir` 输入。
 - 若 reindex 的 `inplace=false`，reindex 同样打印 `OUTPUT_DIR:<path>`，传给 cvtlabelme；若 `inplace=true`，则 cvtlabelme 直接使用 filter 输出目录。
 - filter 产生多个输出目录（`merge=false` + 多类别）时，reindex/cvtlabelme 对每个目录独立运行。
 
