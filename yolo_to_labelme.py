@@ -5,7 +5,8 @@
   --mapping       "0:cat,2:toy"        （内联格式，支持含空格的类别名）
   --classes-file  /path/classes.txt   （每行一个类别名，行号即 ID，从 0 开始）
 
-输出 JSON 默认写入 images/ 目录（与图像共存），指定 --output-dir 时按源目录结构镜像输出。
+输出 JSON 默认写入 images/ 目录（与图像共存）；若同级存在 images_deduped*/，
+会自动将对应 JSON 以硬链接方式同步到这些目录。指定 --output-dir 时按源目录结构镜像输出。
 """
 import argparse
 import json
@@ -167,6 +168,19 @@ def _find_images_sibling(parent: Path, exclude: Path) -> Optional[Path]:
     return None
 
 
+def find_dedup_images_siblings(parent: Path, exclude: Path) -> List[Path]:
+    """在 parent 目录下查找所有 images_deduped* 同级目录。"""
+    result: List[Path] = []
+    for candidate in sorted(parent.iterdir()):
+        if (
+            candidate.is_dir()
+            and candidate.name.startswith("images_deduped")
+            and candidate != exclude
+        ):
+            result.append(candidate)
+    return result
+
+
 def find_split_pairs(source_dir: Path) -> List[Tuple[Path, Path]]:
     """
     在 source_dir 下找到所有 (images_dir, labels_dir) 配对。
@@ -208,6 +222,51 @@ def match_image_for_label(label_file: Path, images_dir: Path) -> Optional[Path]:
         if candidate.is_file():
             return candidate
     return None
+
+
+def link_json_to_dedup_images(
+    json_path: Path,
+    stem: str,
+    dedup_images_dirs: List[Path],
+    overwrite: bool,
+    dry_run: bool,
+    debug: bool,
+) -> int:
+    """将 json_path 以硬链接方式同步到匹配的 images_deduped* 目录。
+
+    仅当 dedup 目录中存在同名图像文件（任意支持后缀）时才创建链接。
+    返回本次新建的链接数量。
+    """
+    if not dedup_images_dirs:
+        return 0
+
+    linked = 0
+    for dedup_dir in dedup_images_dirs:
+        has_image = False
+        for suffix in IMAGE_SUFFIXES:
+            if (dedup_dir / f"{stem}{suffix}").is_file():
+                has_image = True
+                break
+        if not has_image:
+            continue
+
+        target_json = dedup_dir / f"{stem}.json"
+        if target_json.exists():
+            if not overwrite:
+                continue
+            if not dry_run:
+                target_json.unlink()
+
+        if debug:
+            print(f"  [LINK] {target_json} -> {json_path}")
+
+        if not dry_run:
+            if not json_path.exists():
+                continue
+            target_json.hardlink_to(json_path)
+        linked += 1
+
+    return linked
 
 
 # ---------------------------------------------------------------------------
@@ -333,12 +392,17 @@ def process_split_pair(
     stats = {
         "label_files": 0,
         "converted": 0,
+        "linked_to_dedup": 0,
         "skipped_no_image": 0,
         "skipped_exists": 0,
         "skipped_empty": 0,
         "error": 0,
     }
     unknown_ids: set = set()
+
+    dedup_images_dirs: List[Path] = []
+    if output_dir is None and images_dir.name == "images":
+        dedup_images_dirs = find_dedup_images_siblings(images_dir.parent, images_dir)
 
     label_files = sorted(labels_dir.glob("*.txt"))
     stats["label_files"] = len(label_files)
@@ -357,10 +421,18 @@ def process_split_pair(
             stats["skipped_exists"] += 1
             if debug:
                 print(f"  [EXISTS SKIP] {out_json}")
+            stats["linked_to_dedup"] += link_json_to_dedup_images(
+                json_path=out_json,
+                stem=lf.stem,
+                dedup_images_dirs=dedup_images_dirs,
+                overwrite=overwrite,
+                dry_run=dry_run,
+                debug=debug,
+            )
             continue
 
         lines = lf.read_text(encoding="utf-8").splitlines()
-        non_empty = [l for l in lines if l.strip()]
+        non_empty = [line_text for line_text in lines if line_text.strip()]
         if not non_empty:
             stats["skipped_empty"] += 1
             if debug:
@@ -382,6 +454,15 @@ def process_split_pair(
             out_json.write_text(
                 json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8"
             )
+
+        stats["linked_to_dedup"] += link_json_to_dedup_images(
+            json_path=out_json,
+            stem=lf.stem,
+            dedup_images_dirs=dedup_images_dirs,
+            overwrite=overwrite,
+            dry_run=dry_run,
+            debug=debug,
+        )
 
         stats["converted"] += 1
 
@@ -509,6 +590,7 @@ def main() -> int:
         print(f"  output_location:    {out_root}")
         print(f"  label_files:        {stats['label_files']}")
         print(f"  converted:          {stats['converted']}")
+        print(f"  linked_to_dedup:    {stats['linked_to_dedup']}")
         print(f"  skipped_no_image:   {stats['skipped_no_image']}")
         print(f"  skipped_exists:     {stats['skipped_exists']}")
         print(f"  skipped_empty:      {stats['skipped_empty']}")
