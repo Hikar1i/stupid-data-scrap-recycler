@@ -1,6 +1,6 @@
 """流水线 wrapper 脚本共享工具模块。
 
-管道阶段：filter → dedup → reindex → cvtlabelme
+管道阶段：filter → rotated → dedup → reindex → cvtlabelme
 每个阶段从上一阶段的 stdout 中解析 OUTPUT_DIR:<路径> 行，
 作为下一阶段的源目录传入。
 """
@@ -56,6 +56,60 @@ def build_dedup_command(
     if ts is not None:
         cmd.extend(["--timestamp-suffix", str(ts).lower()])
 
+    if print_output_dir:
+        cmd.append("--print-output-dir")
+
+    return cmd
+
+
+def build_rotated_filter_command(
+    script_path: Path,
+    scan_dir: Path,
+    rotated_cfg: dict,
+    print_output_dir: bool,
+) -> List[str]:
+    """构建 yolo_rotated_filter.py 命令。
+
+    rotated_cfg 支持的键：
+      python                (可选) 专用 Python 解释器路径，默认 sys.executable
+      output_root           (可选) 旋转图像输出根目录；未配置时使用 scan_dir（推荐）
+      edge_width_percent    (可选) 外环检测宽度百分比
+      black_area_percent    (可选) 外环黑色像素占比阈值百分比
+      black_pixel_threshold (可选) 灰度黑色像素阈值
+      timestamp_suffix      (可选) 输出目录名是否带时间戳后缀
+      dry_run               (可选) 是否仅预览
+      debug                 (可选) 是否打印逐文件日志
+    """
+    # output_root 未配置时默认等于 scan_dir（rotated 结果写入当前阶段目录内）
+    output_root = rotated_cfg.get("output_root") or str(scan_dir)
+
+    python_bin = rotated_cfg.get("python") or sys.executable
+    cmd: List[str] = [
+        python_bin,
+        str(script_path),
+        "--scan-dir",
+        str(scan_dir),
+        "--output-root",
+        str(output_root),
+    ]
+
+    for key, arg in [
+        ("edge_width_percent", "--edge-width-percent"),
+        ("black_area_percent", "--black-area-percent"),
+        ("black_pixel_threshold", "--black-pixel-threshold"),
+    ]:
+        val = rotated_cfg.get(key)
+        if val is not None:
+            cmd.extend([arg, str(val)])
+
+    ts = rotated_cfg.get("timestamp_suffix")
+    if ts is not None:
+        cmd.extend(["--timestamp-suffix", str(ts).lower()])
+
+    if rotated_cfg.get("dry_run"):
+        cmd.append("--dry-run")
+    if rotated_cfg.get("debug"):
+        cmd.append("--debug")
     if print_output_dir:
         cmd.append("--print-output-dir")
 
@@ -177,20 +231,22 @@ def run_pipeline_stages(
     cvtlabelme_cfg: Optional[dict],
     print_command: bool,
     dedup_cfg: Optional[dict] = None,
+    rotated_cfg: Optional[dict] = None,
 ) -> None:
-    """在 filter 阶段完成后，依次调度 dedup、reindex 和或 cvtlabelme 阶段。
+    """在 filter 阶段完成后，依次调度 rotated、dedup、reindex 和或 cvtlabelme 阶段。
 
     filter_output_dirs：filter 阶段产生的输出目录列表（通常为含各 split 的 merge 根目录）。
     """
+    has_rotated = rotated_cfg is not None
     has_dedup = dedup_cfg is not None
     has_reindex = reindex_cfg is not None
     has_cvtlabelme = cvtlabelme_cfg is not None
 
-    if not has_dedup and not has_reindex and not has_cvtlabelme:
+    if not has_rotated and not has_dedup and not has_reindex and not has_cvtlabelme:
         return
 
-    # 仅配置 cvtlabelme 而无 reindex 且无 dedup 时的警告
-    if has_cvtlabelme and not has_reindex and not has_dedup:
+    # 仅配置 cvtlabelme 而无 reindex 且无 dedup 且无 rotated 时的警告
+    if has_cvtlabelme and not has_reindex and not has_dedup and not has_rotated:
         print("!" * 90)
         print(
             "警告：cvtlabelme 阶段已配置，但缺少 reindex 阶段。\n"
@@ -203,8 +259,26 @@ def run_pipeline_stages(
     reindex_script = script_root / "yolo_remap.py"
     cvtlabelme_script = script_root / "yolo_to_labelme.py"
     dedup_script = script_root / "yolo_dedup.py"
+    rotated_script = script_root / "yolo_rotated_filter.py"
 
     current_sources = list(filter_output_dirs)
+
+    # ── rotated 阶段 ────────────────────────────────────────────────────────────────────────
+    if has_rotated:
+        print("=" * 90)
+        print("Pipeline 阶段：rotated（旋转黑边图像筛除）")
+        print("=" * 90)
+        rotated_cmds = [
+            build_rotated_filter_command(
+                rotated_script,
+                scan_dir=src,
+                rotated_cfg=rotated_cfg,
+                print_output_dir=False,
+            )
+            for src in current_sources
+        ]
+        for rotated_cmd in rotated_cmds:
+            run_stage(rotated_cmd, "rotated", print_command)
 
     # ── dedup 阶段 ──────────────────────────────────────────────────────────────────────────
     if has_dedup:
