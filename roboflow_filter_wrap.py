@@ -4,6 +4,8 @@ roboflow_filter.py 的配置驱动 wrapper，可选支持流水线阶段。
 
 嵌套 TOML 格式（pipeline 模式）：
     [profiles.<名称>.filter]      # 必选，过滤阶段
+    [profiles.<名称>.rotated]     # 可选，旋转黑边图像筛除阶段（在 dedup 前）
+    [profiles.<名称>.dedup]       # 可选，图像去重阶段
     [profiles.<名称>.reindex]     # 可选，过滤后运行 yolo_remap.py
     [profiles.<名称>.cvtlabelme]  # 可选，reindex/filter 后运行 yolo_to_labelme.py
 
@@ -249,13 +251,13 @@ def build_command(validated: Dict[str, Any], print_output_dir: bool = False) -> 
     return cmd
 
 
-PIPELINE_STAGE_KEYS = {"filter", "reindex", "cvtlabelme", "dedup"}
+PIPELINE_STAGE_KEYS = {"filter", "rotated", "reindex", "cvtlabelme", "dedup"}
 
 
 def is_pipeline_profile(profile: Dict[str, Any]) -> bool:
     """判断该 profile 是否为嵌套 pipeline 格式。
 
-    当 'filter'、'reindex'、'cvtlabelme' 中任意一个为字典子表时返回 True。
+    当 'filter'、'rotated'、'reindex'、'cvtlabelme'、'dedup' 中任意一个为字典子表时返回 True。
     """
     return any(isinstance(profile.get(k), dict) for k in PIPELINE_STAGE_KEYS)
 
@@ -274,18 +276,25 @@ def main() -> int:
     # ── 检测 profile 格式 ────────────────────────────────────────────────
     if is_pipeline_profile(raw_profile):
         filter_cfg = raw_profile.get("filter")  # 无 filter 子表时为 None
+        rotated_cfg = raw_profile.get("rotated")  # 缺失时为 None
         reindex_cfg = raw_profile.get("reindex")  # 缺失时为 None
         cvtlabelme_cfg = raw_profile.get("cvtlabelme")  # 缺失时为 None
         dedup_cfg = raw_profile.get("dedup")  # 缺失时为 None
     else:
         # 展平格式（将整个 profile 作为 filter 配置）
         filter_cfg = raw_profile
+        rotated_cfg = None
         reindex_cfg = None
         cvtlabelme_cfg = None
         dedup_cfg = None
 
     has_filter = filter_cfg is not None
-    has_pipeline = reindex_cfg is not None or cvtlabelme_cfg is not None or dedup_cfg is not None
+    has_pipeline = (
+        rotated_cfg is not None
+        or dedup_cfg is not None
+        or reindex_cfg is not None
+        or cvtlabelme_cfg is not None
+    )
 
     if has_filter:
         validated, errors = validate_profile(filter_cfg, args.config_name)
@@ -299,7 +308,7 @@ def main() -> int:
         command = None
 
     if not has_filter and not has_pipeline:
-        print("[错误] Profile 中无有效的阶段节（filter/reindex/cvtlabelme）。", file=sys.stderr)
+        print("[错误] Profile 中无有效的阶段节（filter/rotated/dedup/reindex/cvtlabelme）。", file=sys.stderr)
         return 1
 
     if args.print_command and command:
@@ -329,7 +338,15 @@ def main() -> int:
             return 1
     else:
         # 无 filter 阶段，第一个阶段配置中必须有 source_dir
-        first_cfg = reindex_cfg if reindex_cfg is not None else cvtlabelme_cfg
+        first_cfg = (
+            rotated_cfg
+            if rotated_cfg is not None
+            else dedup_cfg
+            if dedup_cfg is not None
+            else reindex_cfg
+            if reindex_cfg is not None
+            else cvtlabelme_cfg
+        )
         source_dir_raw = first_cfg.get("source_dir") if first_cfg else None
         if not source_dir_raw:
             print(
@@ -346,6 +363,7 @@ def main() -> int:
         cvtlabelme_cfg=cvtlabelme_cfg,
         print_command=args.print_command,
         dedup_cfg=dedup_cfg,
+        rotated_cfg=rotated_cfg,
     )
     return 0
 

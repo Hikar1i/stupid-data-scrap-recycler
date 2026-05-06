@@ -15,6 +15,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.v16i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.v16i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -37,6 +46,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/---------.v11i.yolov11/
 target_names = "crane,tower-crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.v11i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -65,6 +83,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.20250217_v2i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.20250217_v2i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -87,6 +114,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/230620_HeavyEquipment.v
 target_names = "Crane,StaticCrane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.230620_HeavyEquipment_v1i_yolov12.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -115,6 +151,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.230620_HeavyEquipments_v1i_yolov12.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.230620_HeavyEquipments_v1i_yolov12.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -137,6 +182,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/24-.yolov11/data.yaml"
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.24-_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -165,6 +219,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.Alpha-Crane-Omega_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.Alpha-Crane-Omega_v1i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -187,6 +250,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/BAP.v4i.yolov11/data.ya
 target_names = "Crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.BAP_v4i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -215,6 +287,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.Construction_Dataset_v3i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.Construction_Dataset_v3i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -237,6 +318,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Construction Vehicles D
 target_names = "Crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.Construction_Vehicles_Detection_v10i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -265,6 +355,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.Construction_Equipment_v6i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.Construction_Equipment_v6i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -287,6 +386,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Construction_Equipment.
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.Construction_Equipment_v6i_yolov12.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -315,6 +423,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.CraneCraneCrane_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.CraneCraneCrane_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -337,6 +454,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Crane_Alert.v1i.yolov11
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.Crane_Alert_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -365,6 +491,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.Dissertation_-with_annotations_in_other_data_base-_v3i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.Dissertation_-with_annotations_in_other_data_base-_v3i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -387,6 +522,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/SAFTEY.v2i.yolov11/data
 target_names = "Tower Crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.SAFTEY_v2i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -415,6 +559,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.Tower_Crane_Component_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.Tower_Crane_Component_v1i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -437,6 +590,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Tower Crane.v1i.yolov11
 target_names = "Tower Crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.Tower_Crane_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -465,6 +627,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.Vehcle_classifiation_v17i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.Vehcle_classifiation_v17i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -487,6 +658,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/Vehicles.v1i.yolov11/da
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.Vehicles_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -515,6 +695,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.apoce-aerial-photographs-for-object-detection-of-construction-equipment-6raie-ur6qc-fsod-absn_v4i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.apoce-aerial-photographs-for-object-detection-of-construction-equipment-6raie-ur6qc-fsod-absn_v4i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -537,6 +726,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/can_cau.yolov11/data.ya
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.can_cau_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -565,6 +763,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.construction_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.construction_v1i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -587,6 +794,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/crane.v1i.yolov11/data.
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.crane_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -615,6 +831,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.crane_v3i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.crane_v3i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -637,6 +862,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/crane_detection.v1i.yol
 target_names = "mobile crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.crane_detection_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -665,6 +899,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.data_v3i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.data_v3i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -687,6 +930,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/datathon_test100.v1i.yo
 target_names = "Crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.datathon_test100_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -715,6 +967,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.find-crane_v1i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.find-crane_v1i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -737,6 +998,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/sand_dump.v13i.yolov11/
 target_names = "crane,rocks-with-crane,sand with crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.sand_dump_v13i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
@@ -765,6 +1035,15 @@ merge = true
 dry_run = false
 debug = false
 
+[profiles.street-sweep_v3i_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
+dry_run = false
+debug = false
+
 [profiles.street-sweep_v3i_yolov11.dedup]
 python = "/home/ieds/.conda/envs/cu12-dev/bin/python"
 threshold = 0.85
@@ -787,6 +1066,15 @@ data_yaml = "/home/ieds/Downloads/craneboom_det_datasets/xml_to_yolo_tes.v6-gene
 target_names = "crane"
 output_root = "/home/ieds/Pictures/deduped_crane_boom_roboflow"
 merge = true
+dry_run = false
+debug = false
+
+[profiles.xml_to_yolo_tes_v6-generate_datas_yolov11.rotated]
+output_root = ""
+edge_width_percent = 10
+black_area_percent = 10
+black_pixel_threshold = 20
+timestamp_suffix = "true"
 dry_run = false
 debug = false
 
