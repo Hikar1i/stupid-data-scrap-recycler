@@ -16,3 +16,4 @@ models/*
 results/**/*
 **/*venv*/
 _legacy/
+.idea/

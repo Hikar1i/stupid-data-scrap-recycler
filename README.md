@@ -433,7 +433,7 @@ python3 yolo_remap.py \
 - `--mapping <id:name,...>` / `--classes-file <path>`（二选一，必填）：
   - `--mapping`：内联映射，支持含空格的类别名，如 `0:cat,6:No helmet,7:Safety Vest`。
   - `--classes-file`：txt 文件，第一行 = ID 0，逐行对应类别名（与 classes.txt 格式一致）。
-- `--output-dir <path>`（可选）：未指定时 JSON 写入 `images/` 目录（与图像共存）；指定时按源目录结构输出到 `<output_dir>/<split>/labelme_<timestamp>/`。
+- `--output-dir <path>`（可选）：未指定时 JSON 写入 `images/` 目录（与图像共存）。若同级存在 `images_deduped*` 目录，会自动把对应 JSON 以硬链接方式同步过去；指定时按源目录结构输出到 `<output_dir>/<split>/labelme_<timestamp>/`。
 - `--overwrite true|false`（默认 `false`）：已存在的 JSON 是否覆盖。
 - `--dry-run`：预览，不创建文件。
 - `--debug`：打印每个文件的转换路径。
